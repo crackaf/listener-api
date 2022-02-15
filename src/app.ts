@@ -7,7 +7,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/:address', (req, res) => {
-  const {address} = req.params;
+  const { address } = req.params;
 });
 
 app.listen(port, () => {

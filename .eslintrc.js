@@ -16,7 +16,8 @@ module.exports = {
     // eslint-disable-next-line quote-props
     indent: ['error', 2],
     'prettier/prettier': 'error',
-    'require-jsdoc': 'warn',
+    'require-jsdoc': 'off',
     'no-unused-vars': 'warn',
+    'object-curly-spacing': ['error', 'always'],
   },
 };
