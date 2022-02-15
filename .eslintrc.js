@@ -4,7 +4,6 @@ module.exports = {
     es2021: true,
     node: true,
   },
-  indent: ['error', 2],
   extends: ['google'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -13,6 +12,11 @@ module.exports = {
   },
   plugins: ['@typescript-eslint', 'prettier'],
   rules: {
+    // eslint-disable-next-line prettier/prettier
+    // eslint-disable-next-line quote-props
+    indent: ['error', 2],
     'prettier/prettier': 'error',
+    'require-jsdoc': 'warn',
+    'no-unused-vars': 'warn',
   },
 };

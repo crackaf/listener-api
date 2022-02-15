@@ -1,7 +1,7 @@
 import {model, Schema} from 'mongoose';
 
 export interface INFTS {
-  contractAddr: Schema.Types.ObjectId;
+  contractAddr: String;
   nftID: number;
   owner: string;
 }
