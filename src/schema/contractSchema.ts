@@ -16,4 +16,4 @@ const contractSchema = new Schema<IContract>({
   },
 });
 
-export default model('Contract', contractSchema);
+export const ContractModel = model('Contract', contractSchema);

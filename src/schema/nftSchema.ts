@@ -21,4 +21,4 @@ const nftSchema = new Schema<INFTS>({
   },
 });
 
-export default model('NFTS', nftSchema);
+export const NFTSModel = model('NFTS', nftSchema);
