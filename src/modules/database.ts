@@ -78,6 +78,10 @@ export class Database {
     );
   }
 
+  /**
+   *
+   * @param {EventData} eventObject
+   */
   insertEvent({
     address,
     event,
@@ -94,6 +98,11 @@ export class Database {
     }).save();
   }
 
+  /**
+   *
+   * @param {EventData[]} events
+   * @return {void}
+   */
   insertEvents(events: EventData[]) {
     if (events.length <= 0) return;
     const data: IEventSchema[] = events.map(
@@ -114,6 +123,10 @@ export class Database {
       });
   }
 
+  /**
+   *
+   * @param {IContractSchema} contractObj
+   */
   updateContract({
     address,
     latestBlock,
@@ -132,6 +145,10 @@ export class Database {
     ContractModel.findOneAndUpdate(filter, update);
   }
 
+  /**
+   *
+   * @param {EventData | EventData[]} data
+   */
   eventHandler(data: EventData | EventData[]) {
     if (Array.isArray(data)) {
       if (data.length > 0) {
@@ -159,6 +176,11 @@ export class Database {
     }
   }
 
+  /**
+   *
+   * @param {IContractSchema} contractObj
+   * @return {IContractSchema}
+   */
   fetchContract({
     address,
     latestBlock,
@@ -175,6 +197,11 @@ export class Database {
     }).exec();
   }
 
+  /**
+   *
+   * @param {IEventSchema} eventObj
+   * @return {IEventSchema}
+   */
   fetchEvent({
     address,
     blockNumber,
