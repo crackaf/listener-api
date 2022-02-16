@@ -120,51 +120,46 @@ export class Listener {
     events: string | string[] = [],
     latestBlock: number = 0,
   ) {
+    // array conversion
+    if (!Array.isArray(events)) {
+      events = [events];
+    }
+    const rpc = NETWORKS[network];
+
     // already exsist in db?
-    if (this._db.isExistContract(address)) {
-      const rpc = NETWORKS[network];
-      if (Array.isArray(events)) {
-        // insert in db
-        this._db.insertContract({
-          network,
-          jsonInterface,
-          address,
-          events,
-          latestBlock,
-        });
-        // insert in array
-        this._add(
-          new Listen(rpc, jsonInterface, address),
-          network,
-          events,
-          latestBlock,
-        );
-      } else {
-        // insert in db
-        events = [events];
-        this._db.insertContract({
-          network,
-          jsonInterface,
-          address,
-          events,
-          latestBlock,
-        });
-        // insert in array
-        this._add(
-          new Listen(rpc, jsonInterface, address),
-          network,
-          events,
-          latestBlock,
-        );
-      }
+    const inDb = this._db.isExistContract(address);
+    const inLocal = address in this.contracts;
+
+    if (inLocal && inDb) {
       return {
-        success: true,
-        msg: `Added contract ${address} with events.`,
+        success: false,
+        msg: `Address ${address} already exsist in db. If you are adding events, please use addEvent.`,
       };
     }
+
+    if (!inDb) {
+      // insert in db
+      this._db.insertContract({
+        network,
+        jsonInterface,
+        address,
+        events,
+        latestBlock,
+      });
+    }
+    if (!inLocal) {
+      // insert in array
+      this._add(
+        new Listen(rpc, jsonInterface, address),
+        network,
+        events,
+        latestBlock,
+      );
+    }
+
     return {
-      success: false,
-      msg: `Address ${address} already exsist in db. If you are adding events, please use addEvent.`,
+      success: true,
+      msg: `Added contract ${address} with events.`,
     };
   }
 
@@ -209,7 +204,7 @@ export class Listener {
         for (const e of this.contracts[address].events) {
           this.contracts[address].listen.loadPastEvents(
             e,
-            this._db.eventHandler,
+            this._eventHandlerWrapper,
             {
               fromBlock: this.contracts[address].latestBlock,
             },
@@ -231,9 +226,13 @@ export class Listener {
       if (Object.prototype.hasOwnProperty.call(this.contracts, addr)) {
         // for every event
         for (const e of this.contracts[addr].events) {
-          this.contracts[addr].listen.loadPastEvents(e, this._db.eventHandler, {
-            fromBlock: this.contracts[addr].latestBlock,
-          });
+          this.contracts[addr].listen.loadPastEvents(
+            e,
+            this._eventHandlerWrapper,
+            {
+              fromBlock: this.contracts[addr].latestBlock,
+            },
+          );
         }
       }
     }
@@ -253,7 +252,7 @@ export class Listener {
             // not listening to this event
             this.contracts[address].listen.listen(
               e as unknown as any,
-              this._db.eventHandler,
+              this._eventHandlerWrapper,
             );
           }
         }
@@ -276,7 +275,7 @@ export class Listener {
             // not listening to this event
             this.contracts[address].listen.listen(
               e as unknown as any,
-              this._db.eventHandler,
+              this._eventHandlerWrapper,
             );
           }
         }
