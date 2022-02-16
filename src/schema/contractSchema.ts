@@ -1,12 +1,15 @@
 import { model, Schema } from 'mongoose';
 
 export interface IContract {
-  contractAddr: string;
+  address: string;
   latestBlock: number;
+  network: string;
+  events: string[];
+  jsonInterface: object[];
 }
 
 const contractSchema = new Schema<IContract>({
-  contractAddr: {
+  address: {
     type: String,
     required: true,
   },
@@ -14,6 +17,20 @@ const contractSchema = new Schema<IContract>({
     type: Number,
     required: true,
   },
+  network: {
+    type: String,
+    required: true,
+  },
+  events: [
+    {
+      type: String,
+    },
+  ],
+  jsonInterface: [
+    {
+      type: Object,
+    },
+  ],
 });
 
 export const ContractModel = model('Contract', contractSchema);

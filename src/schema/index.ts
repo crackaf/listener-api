@@ -1,2 +1,2 @@
 export * from './contractSchema';
-export * from './nftSchema';
+export * from './EventSchema';

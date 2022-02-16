@@ -1,5 +1,10 @@
 import express from 'express';
+import { dbConnector } from './modules/database';
+import { EventsModel } from './schema';
+import abi from './config/abi/nft.json';
+
 import { getNFT, getContract, insertContract, insertNFT } from './utils/helper';
+import { IContract, IEvents } from './schema';
 const app = express();
 const port = 3000;
 
@@ -7,27 +12,55 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
+app.get('/testcontract', async (req, res) => {
+  const contractObj: IContract = {
+    network: 'https://rinkeby-light.eth.linkpool.io/',
+    jsonInterface: abi,
+    address: '0x0D72bad65008D1E3D42E9699dF619c7555A1311d',
+    events: ['TransferTo', 'TransferFrom'],
+    latestBlock: 12,
+  };
+  dbConnector.insertContract(contractObj);
+  res.send('inserted');
+});
+
+app.get('/testevent', async (req, res) => {
+  const eventObj = {
+    address: '0x706d17f6a15177865244B25aEfdfDBE1e572c7E6',
+    blockNumber: 70,
+    transactionHash: '0x706d17f6a15177865244B25aEfdfDBE1e572c7E6',
+    event: 'TransferFrom',
+    returnValues: {
+      owner: '0x369f70E1eb531E4523AEe4a66Fb9DF49E73e912E',
+      amount: 22,
+    },
+  };
+  // dbConnector.insertEvent(eventObj);
+  const newObj = await new EventsModel(eventObj).save();
+  res.send(newObj);
+});
+
 app.get('/contract/:contract', (req, res) => {
   const contract = req.params.contract;
   res.send(getContract(contract));
 });
 
-app.get('/contract/:contract/:tokenID', (req, res) => {
+app.get('/contract/:contract/:tokenid', (req, res) => {
   const contract = req.params.contract;
-  const tokenID = req.params.tokenID;
+  const tokenID = req.params.tokenid;
   res.send(getNFT(contract, parseInt(tokenID)));
 });
 
-app.get('/insertContract/:contract/:block', (req, res) => {
+app.get('/insertcontract/:contract/:block', (req, res) => {
   const contract = req.params.contract;
   const latestBlock = req.params.block;
   res.send(insertContract(contract, parseInt(latestBlock)));
 });
 
-app.get('/insertNFT/:contract/:owner/:tokenID', (req, res) => {
+app.get('/insertnFT/:contract/:owner/:tokenid', (req, res) => {
   const contract = req.params.contract;
   const owner = req.params.owner;
-  const tokenID = req.params.tokenID;
+  const tokenID = req.params.tokenid;
   res.send(insertNFT(contract, parseInt(tokenID), owner));
 });
 
