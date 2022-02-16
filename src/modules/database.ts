@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { EventData } from 'web3-eth-contract';
+import { AbiItem } from 'web3-utils';
 import {
   ContractModel,
   EventModel,
@@ -26,8 +27,8 @@ export class Database {
   /**
    *@return {IContractSchema[]}
    */
-  _loadDb() {
-    return ContractModel.find({});
+  loadDb() {
+    return ContractModel.find({}).exec();
   }
 
   /**
@@ -56,13 +57,25 @@ export class Database {
     events,
     jsonInterface,
   }: IContractSchema) {
-    new ContractModel({
-      address,
-      latestBlock,
-      network,
-      events,
-      jsonInterface,
-    }).save();
+    ContractModel.findOne(
+      {
+        address: address,
+      },
+      (err, result) => {
+        if (err) {
+          console.log(err);
+        }
+        if (!result) {
+          new ContractModel({
+            address,
+            latestBlock,
+            network,
+            events,
+            jsonInterface,
+          }).save();
+        }
+      },
+    );
   }
 
   insertEvent({
@@ -99,6 +112,83 @@ export class Database {
       .catch((err) => {
         console.log(err);
       });
+  }
+
+  updateContract({
+    address,
+    latestBlock,
+    network,
+    events,
+    jsonInterface,
+  }: IContractSchema) {
+    const filter = { address: address };
+    const update = {
+      address: address,
+      latestBlock: latestBlock,
+      network: network,
+      events: events,
+      jsonInterface: jsonInterface,
+    };
+    ContractModel.findOneAndUpdate(filter, update);
+  }
+
+  eventHandler(data: EventData | EventData[]) {
+    if (Array.isArray(data)) {
+      if (data.length > 0) {
+        const maxBlockNumber = Math.max(...data.map((d) => d.blockNumber));
+        const latestBlockData = data.find(
+          (dataItem: EventData) => dataItem.blockNumber == maxBlockNumber,
+        );
+        EventModel.findOne(
+          {
+            blockNumber: { $gte: maxBlockNumber },
+            address: latestBlockData.address,
+          },
+          (err, result) => {
+            if (err) {
+              console.log(err);
+            }
+            if (!result) {
+              this.insertEvent(latestBlockData);
+            }
+          },
+        );
+      }
+    } else {
+      this.insertEvent(data);
+    }
+  }
+
+  fetchContract({
+    address,
+    latestBlock,
+    network,
+    events,
+    jsonInterface,
+  }: Partial<IContractSchema>) {
+    return ContractModel.find({
+      address,
+      latestBlock,
+      network,
+      events,
+      jsonInterface,
+    }).exec();
+  }
+
+  fetchEvent({
+    address,
+    blockNumber,
+    transactionHash,
+    event,
+    returnValues,
+  }: Partial<IEventSchema>) {
+    return EventModel.find({
+      address,
+      blockNumber,
+      transactionHash,
+      event,
+      returnValues,
+    }).exec();
   }
 }
 
