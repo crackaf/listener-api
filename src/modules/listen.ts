@@ -78,16 +78,18 @@ export class Listen {
     eventHandler: (data: EventData) => void,
     eventOptions?: EventOptions,
   ) {
-    this._contract.events[event](eventOptions)
-      .on('data', (data: EventData) => {
-        console.log(event, data.transactionHash);
-        eventHandler(data);
-      })
-      .on('changed', (changed) => console.log(changed))
-      .on('error', (err) => {
-        console.error(err);
-        throw err;
-      })
-      .on('connected', (str) => console.log(str));
+    if (event in this._contract.events) {
+      this._contract.events[event](eventOptions)
+        .on('data', (data: EventData) => {
+          console.log(event, data.transactionHash);
+          eventHandler(data);
+        })
+        .on('changed', (changed) => console.log(changed))
+        .on('error', (err) => {
+          console.error(err);
+          throw err;
+        })
+        .on('connected', (str) => console.log(str));
+    } else console.log(`Event ${event} is not in contract events`);
   }
 }

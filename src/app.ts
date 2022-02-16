@@ -1,6 +1,5 @@
 import express from 'express';
 import { AbiItem } from 'web3-utils';
-import dbConnector from './modules/database';
 import { EventModel } from './schema';
 import { IContractSchema, IEventSchema } from './schema';
 import abi from './config/abi/standardInterface.json';
@@ -23,7 +22,7 @@ app.get('/testcontract', async (req, res) => {
     events: ['TransferTo', 'TransferFrom'],
     latestBlock: 12,
   };
-  dbConnector.insertContract(contractObj);
+  db.insertContract(contractObj);
   res.send('inserted');
 });
 
@@ -43,29 +42,40 @@ app.get('/testevent', async (req, res) => {
   res.send(newObj);
 });
 
-app.get('/contract/:contract', (req, res) => {
+app.get('/addcontract/:contract', (req, res) => {
   const contract = req.params.contract;
-  res.send(getContract(contract));
+  listener.add(
+    'rinkeby',
+    abi as AbiItem[],
+    contract,
+    ['Transfer', 'OwnershipTransferred'],
+    10165138,
+  );
 });
 
-app.get('/contract/:contract/:tokenid', (req, res) => {
-  const contract = req.params.contract;
-  const tokenID = req.params.tokenid;
-  res.send(getNFT(contract, parseInt(tokenID)));
-});
+// app.get('/contract/:contract', (req, res) => {
+//   const contract = req.params.contract;
+//   res.send(getContract(contract));
+// });
 
-app.get('/insertcontract/:contract/:block', (req, res) => {
-  const contract = req.params.contract;
-  const latestBlock = req.params.block;
-  res.send(insertContract(contract, parseInt(latestBlock)));
-});
+// app.get('/contract/:contract/:tokenid', (req, res) => {
+//   const contract = req.params.contract;
+//   const tokenID = req.params.tokenid;
+//   res.send(getNFT(contract, parseInt(tokenID)));
+// });
 
-app.get('/insertnFT/:contract/:owner/:tokenid', (req, res) => {
-  const contract = req.params.contract;
-  const owner = req.params.owner;
-  const tokenID = req.params.tokenid;
-  res.send(insertNFT(contract, parseInt(tokenID), owner));
-});
+// app.get('/insertcontract/:contract/:block', (req, res) => {
+//   const contract = req.params.contract;
+//   const latestBlock = req.params.block;
+//   res.send(insertContract(contract, parseInt(latestBlock)));
+// });
+
+// app.get('/insertnFT/:contract/:owner/:tokenid', (req, res) => {
+//   const contract = req.params.contract;
+//   const owner = req.params.owner;
+//   const tokenID = req.params.tokenid;
+//   res.send(insertNFT(contract, parseInt(tokenID), owner));
+// });
 
 app.listen(port, () => {
   return console.log(`Express is listening at http://localhost:${port}`);

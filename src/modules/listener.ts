@@ -24,8 +24,8 @@ export interface IsListening {
 export class Listener {
   private _db: Database;
 
-  public contracts: IContracts;
-  public isListening: IsListening;
+  public contracts: IContracts = {};
+  public isListening: IsListening = {};
 
   constructor(dbConnector: Database) {
     this._db = dbConnector;
@@ -34,6 +34,9 @@ export class Listener {
       for (const addr in this.contracts) {
         if (Object.prototype.hasOwnProperty.call(this.contracts, addr)) {
           for (const e of this.contracts[addr].events) {
+            if (!(addr in this.isListening)) {
+              this.isListening[addr] = {};
+            }
             this.isListening[addr][e] = false;
           }
         }
@@ -103,6 +106,9 @@ export class Listener {
     };
 
     // listening to false
+    if (!(_listen.address in this.isListening)) {
+      this.isListening[_listen.address] = {};
+    }
     for (const e of this.contracts[_listen.address].events) {
       this.isListening[_listen.address][e] = false;
     }
