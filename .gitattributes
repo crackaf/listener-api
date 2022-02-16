@@ -1,3 +1,3 @@
 # Auto detect text files and perform LF normalization
-*ts=lf
-*js=lf
+*.ts=lf
+*.js=lf
