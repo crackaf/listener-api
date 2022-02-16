@@ -56,13 +56,13 @@ export type Transfer = ContractEventLog<{
   2: string;
 }>;
 
-export interface Nft extends BaseContract {
+export interface StandardInterface extends BaseContract {
   constructor(
     jsonInterface: any[],
     address?: string,
     options?: ContractOptions,
-  ): Nft;
-  clone(): Nft;
+  ): StandardInterface;
+  clone(): StandardInterface;
   methods: {
     approve(
       to: string,

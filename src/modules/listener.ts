@@ -10,6 +10,7 @@ export interface IContracts {
     listen: Listen;
     events: string[];
     latestBlock: number;
+    network: string;
   };
 }
 
@@ -44,7 +45,24 @@ export class Listener {
     });
   }
 
-  private async _loadDb() {}
+  private async _loadDb() {
+    const dataList = await this._db.loadDb();
+    for (const {
+      network,
+      jsonInterface,
+      address,
+      events,
+      latestBlock,
+    } of dataList) {
+      this.add(
+        network as unknown as any,
+        jsonInterface,
+        address,
+        events,
+        latestBlock,
+      );
+    }
+  }
 
   private _updateBlock(address: string, newBlockNumber: number) {
     if (this.contracts[address].latestBlock < newBlockNumber) {
@@ -70,12 +88,18 @@ export class Listener {
     this._db.eventHandler(data);
   }
 
-  private _add(_listen: Listen, _events: string[], _fromBlock: number) {
+  private _add(
+    _listen: Listen,
+    _network: string,
+    _events: string[],
+    _fromBlock: number,
+  ) {
     this.contracts[_listen.address] = {
       address: _listen.address,
       listen: _listen,
       events: _events,
       latestBlock: _fromBlock,
+      network: _network,
     };
 
     // listening to false
@@ -109,7 +133,12 @@ export class Listener {
           latestBlock,
         });
         // insert in array
-        this._add(new Listen(rpc, jsonInterface, address), events, latestBlock);
+        this._add(
+          new Listen(rpc, jsonInterface, address),
+          network,
+          events,
+          latestBlock,
+        );
       } else {
         // insert in db
         events = [events];
@@ -121,7 +150,12 @@ export class Listener {
           latestBlock,
         });
         // insert in array
-        this._add(new Listen(rpc, jsonInterface, address), events, latestBlock);
+        this._add(
+          new Listen(rpc, jsonInterface, address),
+          network,
+          events,
+          latestBlock,
+        );
       }
       return {
         success: true,
@@ -136,6 +170,30 @@ export class Listener {
 
   addEvent(address: string, event: string) {
     if (!(address in this.contracts)) {
+      if (!this.contracts[address].events.includes(event)) {
+        // add to array
+        this.contracts[address].events.push(event);
+        // update to db
+        this._db.updateContract({
+          address: this.contracts[address].address,
+          events: this.contracts[address].events,
+          latestBlock: this.contracts[address].latestBlock,
+          network: this.contracts[address].network,
+          jsonInterface: this.contracts[address].listen.jsonInterface,
+        });
+        // listen to past events and then listen
+        this.loadPastEvents(address).finally(() => {
+          this.listenEvents(address);
+        });
+        return {
+          success: true,
+          msg: `Event ${event} added in address ${address}!`,
+        };
+      }
+      return {
+        success: false,
+        msg: `Event ${event} already in address ${address}!`,
+      };
     }
     return {
       success: false,

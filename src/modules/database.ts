@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { EventData } from 'web3-eth-contract';
-import { AbiItem } from 'web3-utils';
 import {
   ContractModel,
   EventModel,

@@ -1,13 +1,15 @@
 import express from 'express';
-import dbConnector from './modules/database';
 import { AbiItem } from 'web3-utils';
+import dbConnector from './modules/database';
 import { EventModel } from './schema';
-import abi from './config/abi/nft.json';
-
-import { getNFT, getContract, insertContract, insertNFT } from './utils/helper';
 import { IContractSchema, IEventSchema } from './schema';
+import abi from './config/abi/standardInterface.json';
+import { Listener } from './modules/listener';
+import db from './modules/database';
+
 const app = express();
 const port = 3000;
+const listener = new Listener(db);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
