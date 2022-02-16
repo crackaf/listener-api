@@ -40,33 +40,43 @@ export class Listen {
   /**
    * Load the past events
    * @param {string} event Event name
-   * @param {EventOptions} eventOptions event options
    * @param {()} eventHandler Function to handle the emitted data
+   * @param {EventOptions} eventOptions event options
    */
   loadPastEvents(
     event: string,
-    eventOptions: PastEventOptions,
     eventHandler: (data: EventData[]) => void,
+    eventOptions?: PastEventOptions,
   ) {
-    this._contract
-      .getPastEvents(event, eventOptions)
-      .then(eventHandler)
-      .catch((err) => {
-        console.error(err);
-        throw err;
-      });
+    if (eventOptions) {
+      this._contract
+        .getPastEvents(event, eventOptions)
+        .then(eventHandler)
+        .catch((err) => {
+          console.error(err);
+          throw err;
+        });
+    } else {
+      this._contract
+        .getPastEvents(event)
+        .then(eventHandler)
+        .catch((err) => {
+          console.error(err);
+          throw err;
+        });
+    }
   }
 
   /**
    * listen to the specific event
    * @param {string} event Event name
-   * @param {EventOptions} eventOptions event options
    * @param {()} eventHandler Function to handle the emitted data
+   * @param {EventOptions} eventOptions event options
    */
   listen(
     event: keyof Nft['events'],
-    eventOptions: EventOptions,
     eventHandler: (data: EventData) => void,
+    eventOptions?: EventOptions,
   ) {
     this._contract.events[event](eventOptions)
       .on('data', (data: EventData) => {

@@ -1,6 +1,6 @@
 import { model, Schema } from 'mongoose';
 
-export interface IEvents {
+export interface IEventSchema {
   address: string;
   blockNumber: number;
   transactionHash: string;
@@ -10,7 +10,7 @@ export interface IEvents {
   };
 }
 
-const eventSchema = new Schema<IEvents>({
+const eventSchema = new Schema<IEventSchema>({
   address: {
     type: String,
     required: true,
@@ -33,4 +33,4 @@ const eventSchema = new Schema<IEvents>({
   },
 });
 
-export const EventsModel = model('Events', eventSchema);
+export const EventModel = model('Event', eventSchema);

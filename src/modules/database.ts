@@ -1,8 +1,13 @@
 import mongoose from 'mongoose';
 import { EventData } from 'web3-eth-contract';
-import { ContractModel, EventsModel, IContract, IEvents } from '../schema';
+import {
+  ContractModel,
+  EventModel,
+  IContractSchema,
+  IEventSchema,
+} from '../schema';
 
-class Database {
+export class Database {
   private static _instance: Database;
 
   private constructor() {
@@ -19,7 +24,7 @@ class Database {
   }
 
   /**
-   *@return {IContract[]}
+   *@return {IContractSchema[]}
    */
   _loadDb() {
     return ContractModel.find({});
@@ -50,7 +55,7 @@ class Database {
     network,
     events,
     jsonInterface,
-  }: IContract) {
+  }: IContractSchema) {
     new ContractModel({
       address,
       latestBlock,
@@ -67,7 +72,7 @@ class Database {
     blockNumber,
     returnValues,
   }: EventData) {
-    new EventsModel({
+    new EventModel({
       address,
       event,
       transactionHash,
@@ -75,9 +80,10 @@ class Database {
       returnValues,
     }).save();
   }
+
   insertEvents(events: EventData[]) {
     if (events.length <= 0) return;
-    const data: IEvents[] = events.map(
+    const data: IEventSchema[] = events.map(
       ({ address, event, transactionHash, blockNumber, returnValues }) => {
         return {
           address,
@@ -88,7 +94,7 @@ class Database {
         };
       },
     );
-    EventsModel.insertMany(data)
+    EventModel.insertMany(data)
       .then()
       .catch((err) => {
         console.log(err);
@@ -96,4 +102,4 @@ class Database {
   }
 }
 
-export const dbConnector = Database.Instance;
+export default Database.Instance;

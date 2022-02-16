@@ -1,5 +1,5 @@
 import { ContractModel } from '../schema';
-import { EventsModel } from '../schema';
+import { EventModel } from '../schema';
 
 /**
  *
@@ -18,7 +18,7 @@ export async function getContract(address: string) {
  * @return {INFTS}
  */
 export async function getNFT(address: string, tokenID: number) {
-  const nft = await EventsModel.find({
+  const nft = await EventModel.find({
     contractAddr: address,
     nftID: tokenID,
   });
@@ -57,7 +57,7 @@ export async function insertNFT(
 ) {
   const contractObj = await ContractModel.exists({ contractAddr: address });
   if (!contractObj) {
-    await new EventsModel({
+    await new EventModel({
       contractAddr: address,
       nftID: tokenID,
       owner: owner,

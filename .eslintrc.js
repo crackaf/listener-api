@@ -19,5 +19,6 @@ module.exports = {
     'require-jsdoc': 'off',
     'no-unused-vars': 'warn',
     'object-curly-spacing': ['error', 'always'],
+    'no-else-return': 'warn',
   },
 };

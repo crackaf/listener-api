@@ -1,10 +1,11 @@
 import express from 'express';
-import { dbConnector } from './modules/database';
-import { EventsModel } from './schema';
+import dbConnector from './modules/database';
+import { AbiItem } from 'web3-utils';
+import { EventModel } from './schema';
 import abi from './config/abi/nft.json';
 
 import { getNFT, getContract, insertContract, insertNFT } from './utils/helper';
-import { IContract, IEvents } from './schema';
+import { IContractSchema, IEventSchema } from './schema';
 const app = express();
 const port = 3000;
 
@@ -13,9 +14,9 @@ app.get('/', (req, res) => {
 });
 
 app.get('/testcontract', async (req, res) => {
-  const contractObj: IContract = {
+  const contractObj: IContractSchema = {
     network: 'https://rinkeby-light.eth.linkpool.io/',
-    jsonInterface: abi,
+    jsonInterface: abi as AbiItem[],
     address: '0x0D72bad65008D1E3D42E9699dF619c7555A1311d',
     events: ['TransferTo', 'TransferFrom'],
     latestBlock: 12,
@@ -25,7 +26,7 @@ app.get('/testcontract', async (req, res) => {
 });
 
 app.get('/testevent', async (req, res) => {
-  const eventObj = {
+  const eventObj: IEventSchema = {
     address: '0x706d17f6a15177865244B25aEfdfDBE1e572c7E6',
     blockNumber: 70,
     transactionHash: '0x706d17f6a15177865244B25aEfdfDBE1e572c7E6',
@@ -36,7 +37,7 @@ app.get('/testevent', async (req, res) => {
     },
   };
   // dbConnector.insertEvent(eventObj);
-  const newObj = await new EventsModel(eventObj).save();
+  const newObj = await new EventModel(eventObj).save();
   res.send(newObj);
 });
 
