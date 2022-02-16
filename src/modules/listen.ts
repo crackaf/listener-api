@@ -48,23 +48,13 @@ export class Listen {
     eventHandler: (data: EventData[]) => void,
     eventOptions?: PastEventOptions,
   ) {
-    if (eventOptions) {
-      this._contract
-        .getPastEvents(event, eventOptions)
-        .then(eventHandler)
-        .catch((err) => {
-          console.error(err);
-          throw err;
-        });
-    } else {
-      this._contract
-        .getPastEvents(event)
-        .then(eventHandler)
-        .catch((err) => {
-          console.error(err);
-          throw err;
-        });
-    }
+    this._contract
+      .getPastEvents(event, eventOptions)
+      .then((data) => eventHandler(data))
+      .catch((err) => {
+        console.error(err);
+        throw err;
+      });
   }
 
   /**
@@ -80,10 +70,7 @@ export class Listen {
   ) {
     if (event in this._contract.events) {
       this._contract.events[event](eventOptions)
-        .on('data', (data: EventData) => {
-          console.log(event, data.transactionHash);
-          eventHandler(data);
-        })
+        .on('data', (data) => eventHandler(data))
         .on('changed', (changed) => console.log(changed))
         .on('error', (err) => {
           console.error(err);

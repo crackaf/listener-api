@@ -3,7 +3,7 @@ export default {
 
   kovan: `https://kovan.infura.io/v3/${process.env.INFURA_IO_KEY}`,
 
-  rinkeby: `https://rinkeby-light.eth.linkpool.io/`,
+  rinkeby: `wss://rinkeby-light.eth.linkpool.io/ws`,
 
   // main ethereum network(mainnet
   mainnet: `https://mainnet.infura.io/v3/${process.env.INFURA_IO_KEY}`,

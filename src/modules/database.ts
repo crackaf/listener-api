@@ -165,7 +165,7 @@ export class Database {
               console.log(err);
             }
             if (!result) {
-              this.insertEvent(latestBlockData);
+              this.insertEvents(data);
             }
           },
         );

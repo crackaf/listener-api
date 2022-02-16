@@ -30,17 +30,6 @@ export class Listener {
   constructor(dbConnector: Database) {
     this._db = dbConnector;
     this._loadDb().finally(() => {
-      // initiazlize the listener array
-      for (const addr in this.contracts) {
-        if (Object.prototype.hasOwnProperty.call(this.contracts, addr)) {
-          for (const e of this.contracts[addr].events) {
-            if (!(addr in this.isListening)) {
-              this.isListening[addr] = {};
-            }
-            this.isListening[addr][e] = false;
-          }
-        }
-      }
       // load past events then current
       this.loadPastEvents().finally(() => {
         this.listenEvents();
@@ -80,7 +69,7 @@ export class Listener {
         // get max block from it
         this._updateBlock(
           data[0].address,
-          Math.max(...data.map((d) => d.blockNumber)),
+          Math.max(...data.map((d) => d.blockNumber ?? 0)),
         );
       }
     } else {
@@ -89,6 +78,24 @@ export class Listener {
 
     // add to db
     this._db.eventHandler(data);
+  }
+
+  private _updateListening(address: string, event: string, value: boolean) {
+    if (address in this.isListening) {
+      this.isListening[address][event] = value;
+    } else {
+      this.isListening[address] = {};
+      this.isListening[address][event] = value;
+    }
+  }
+
+  private _getListening(address: string, event: string): boolean {
+    if (address in this.isListening) {
+      if (event in this.isListening[address]) {
+        return this.isListening[address][event];
+      }
+    }
+    return false;
   }
 
   private _add(
@@ -106,11 +113,8 @@ export class Listener {
     };
 
     // listening to false
-    if (!(_listen.address in this.isListening)) {
-      this.isListening[_listen.address] = {};
-    }
     for (const e of this.contracts[_listen.address].events) {
-      this.isListening[_listen.address][e] = false;
+      this._updateListening(_listen.address, e, false);
     }
 
     // load past events for the db then current
@@ -165,7 +169,7 @@ export class Listener {
 
     return {
       success: true,
-      msg: `Added contract ${address} with events.`,
+      msg: `Added contract ${address} with events ${events}.`,
     };
   }
 
@@ -210,7 +214,7 @@ export class Listener {
         for (const e of this.contracts[address].events) {
           this.contracts[address].listen.loadPastEvents(
             e,
-            this._eventHandlerWrapper,
+            (data: EventData | EventData[]) => this._eventHandlerWrapper(data),
             {
               fromBlock: this.contracts[address].latestBlock,
             },
@@ -234,7 +238,7 @@ export class Listener {
         for (const e of this.contracts[addr].events) {
           this.contracts[addr].listen.loadPastEvents(
             e,
-            this._eventHandlerWrapper,
+            (data: EventData | EventData[]) => this._eventHandlerWrapper(data),
             {
               fromBlock: this.contracts[addr].latestBlock,
             },
@@ -254,12 +258,18 @@ export class Listener {
       if (Object.prototype.hasOwnProperty.call(this.contracts, address)) {
         // for every event
         for (const e of this.contracts[address].events) {
-          if (!this.isListening[address][e]) {
+          if (
+            address in this.isListening &&
+            e in this.isListening[address] &&
+            !this.isListening[address][e]
+          ) {
             // not listening to this event
             this.contracts[address].listen.listen(
               e as unknown as any,
-              this._eventHandlerWrapper,
+              (data: EventData | EventData[]) =>
+                this._eventHandlerWrapper(data),
             );
+            this._updateListening(address, e, true);
           }
         }
         return {
@@ -277,12 +287,18 @@ export class Listener {
       if (Object.prototype.hasOwnProperty.call(this.contracts, addr)) {
         // for every event
         for (const e of this.contracts[addr].events) {
-          if (!this.isListening[address][e]) {
+          if (
+            addr in this.isListening &&
+            e in this.isListening[addr] &&
+            !this.isListening[addr][e]
+          ) {
             // not listening to this event
             this.contracts[address].listen.listen(
               e as unknown as any,
-              this._eventHandlerWrapper,
+              (data: EventData | EventData[]) =>
+                this._eventHandlerWrapper(data),
             );
+            this._updateListening(addr, e, true);
           }
         }
       }
