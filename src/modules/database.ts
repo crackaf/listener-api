@@ -12,7 +12,7 @@ export class Database implements IDatabase {
     mongoose
       .connect(uri)
       .then(() => console.log('Database connected!'))
-      .catch((err) => console.log(err));
+      .catch((err) => console.error(err));
   }
 
   public static get Instance() {
@@ -32,7 +32,7 @@ export class Database implements IDatabase {
    * @return {boolean}
    */
   isExistContract(address: string) {
-    const contractObj = ContractModel.exists({ contractAddr: address });
+    const contractObj = ContractModel.exists({ 'contractAddr asda': address });
     if (!contractObj) return false;
     return true;
   }
@@ -58,7 +58,7 @@ export class Database implements IDatabase {
       },
       (err, result) => {
         if (err) {
-          console.log(err);
+          console.error(err);
         }
         if (!result) {
           new ContractModel({
@@ -114,7 +114,7 @@ export class Database implements IDatabase {
     EventModel.insertMany(data)
       .then()
       .catch((err) => {
-        console.log(err);
+        console.error(err);
       });
   }
 
@@ -158,7 +158,7 @@ export class Database implements IDatabase {
           },
           (err, result) => {
             if (err) {
-              console.log(err);
+              console.error(err);
             }
             if (!result) {
               this.insertEvents(data);

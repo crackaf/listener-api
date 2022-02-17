@@ -1,4 +1,6 @@
 import express from 'express';
+import * as Sentry from '@sentry/node';
+import * as Tracing from '@sentry/tracing';
 import { AbiItem } from 'web3-utils';
 import { EventModel } from './schema';
 import { IContractSchema, IEventSchema } from './utils/types';
@@ -8,11 +10,40 @@ import db from './modules/database';
 
 const app = express();
 const port = 3000;
-const listener = new Listener(db);
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+// Listener calling
+let l = null;
+try {
+  l = new Listener(db);
+} catch (e) {
+  Sentry.captureException(e);
+}
+
+const listener: Listener = l;
+
+Sentry.init({
+  dsn: 'https://b0559d6508694b5da9915e251e3dbb48@o1146133.ingest.sentry.io/6214565',
+  integrations: [
+    // enable HTTP calls tracing
+    new Sentry.Integrations.Http({ tracing: true }),
+    // enable Express.js middleware tracing
+    new Tracing.Integrations.Express({ app }),
+  ],
+
+  // Set tracesSampleRate to 1.0 to capture 100%
+  // of transactions for performance monitoring.
+  // We recommend adjusting this value in production
+  tracesSampleRate: 1.0,
 });
+
+// RequestHandler creates a separate execution context using domains,
+// so that every
+// transaction/span/breadcrumb is attached to its own Hub instance
+app.use(Sentry.Handlers.requestHandler());
+// TracingHandler creates a trace for every incoming request
+app.use(Sentry.Handlers.tracingHandler());
+
+// All controllers should live here
 
 app.get('/testcontract', async (req, res) => {
   const contractObj: IContractSchema = {
@@ -42,40 +73,17 @@ app.get('/testevent', async (req, res) => {
   res.send(newObj);
 });
 
-app.get('/addcontract/:contract', (req, res) => {
-  const contract = req.params.contract;
-  listener.add(
-    'rinkeby',
-    abi as AbiItem[],
-    contract,
-    ['Transfer', 'OwnershipTransferred'],
-    10165138,
-  );
+// The error handler must be before any other error middleware
+// and after all controllers
+app.use(Sentry.Handlers.errorHandler());
+
+// Optional fallthrough error handler
+app.use(function onError(err, req, res, next) {
+  // The error id is attached to `res.sentry` to be returned
+  // and optionally displayed to the user for support.
+  res.statusCode = 500;
+  res.end(res.sentry + '\n');
 });
-
-// app.get('/contract/:contract', (req, res) => {
-//   const contract = req.params.contract;
-//   res.send(getContract(contract));
-// });
-
-// app.get('/contract/:contract/:tokenid', (req, res) => {
-//   const contract = req.params.contract;
-//   const tokenID = req.params.tokenid;
-//   res.send(getNFT(contract, parseInt(tokenID)));
-// });
-
-// app.get('/insertcontract/:contract/:block', (req, res) => {
-//   const contract = req.params.contract;
-//   const latestBlock = req.params.block;
-//   res.send(insertContract(contract, parseInt(latestBlock)));
-// });
-
-// app.get('/insertnFT/:contract/:owner/:tokenid', (req, res) => {
-//   const contract = req.params.contract;
-//   const owner = req.params.owner;
-//   const tokenID = req.params.tokenid;
-//   res.send(insertNFT(contract, parseInt(tokenID), owner));
-// });
 
 app.listen(port, () => {
   return console.log(`Express is listening at http://localhost:${port}`);

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
 import { EventData } from 'web3-eth-contract';
 import { Listen } from './listen';
@@ -44,11 +45,17 @@ export class Listener {
    * only using the above mentioned function that should be implemented.
    */
   constructor(dbConnector: IDatabase) {
+    Sentry.addBreadcrumb({
+      message: 'Contructor Called',
+    });
     this._db = dbConnector;
     this._loadDb().finally(() => {
-      // load past events then current
-      this.loadPastEvents().finally(() => {
-        this.listenEvents();
+      Sentry.addBreadcrumb({
+        message: 'Db loaded',
+        data: {
+          contracts: this.contracts,
+          listeners: this.isListening,
+        },
       });
     });
   }
@@ -57,7 +64,14 @@ export class Listener {
    * This function will load the database and
    */
   private async _loadDb() {
+    Sentry.addBreadcrumb({
+      message: '_loadDb Called',
+    });
     const dataList = await this._db.getContracts();
+    Sentry.addBreadcrumb({
+      message: 'Contract data from db',
+      data: { list: dataList },
+    });
     for (const {
       network,
       jsonInterface,
@@ -65,13 +79,26 @@ export class Listener {
       events,
       latestBlock,
     } of dataList) {
-      this.add(
+      const result = this.add(
         network as unknown as any,
         jsonInterface,
         address,
         events,
         latestBlock,
       );
+      Sentry.addBreadcrumb({
+        message: 'loadDb->Add',
+        data: {
+          result: result,
+          ...{
+            network,
+            jsonInterface,
+            address,
+            events,
+            latestBlock,
+          },
+        },
+      });
     }
   }
 
@@ -83,6 +110,14 @@ export class Listener {
    */
   private _updateBlock(address: string, newBlockNumber: number) {
     if (this.contracts[address].latestBlock < newBlockNumber) {
+      Sentry.addBreadcrumb({
+        message: 'Update latest block',
+        data: {
+          address: address,
+          oldNumber: this.contracts[address].latestBlock,
+          newNumber: newBlockNumber,
+        },
+      });
       this.contracts[address].latestBlock = newBlockNumber;
     }
   }
@@ -160,6 +195,17 @@ export class Listener {
       network: _network,
     };
 
+    Sentry.addBreadcrumb({
+      message: 'Runtime storage add',
+      data: {
+        address: _listen.address,
+        listen: _listen,
+        events: _events,
+        latestBlock: _fromBlock,
+        network: _network,
+      },
+    });
+
     // listening to false
     for (const e of this.contracts[_listen.address].events) {
       this._updateListening(_listen.address, e, false);
@@ -191,10 +237,13 @@ export class Listener {
     if (!Array.isArray(events)) {
       events = [events];
     }
+
+    // rpc
     const rpc = NETWORKS[network];
 
-    // already exsist in db?
+    // already exist in db?
     const inDb = this._db.isExistContract(address);
+    // already exist in runtime storage?
     const inLocal = address in this.contracts;
 
     if (inLocal && inDb) {
@@ -292,7 +341,7 @@ export class Listener {
         }
         return {
           success: true,
-          msg: `Listening to ${address} for every event.`,
+          msg: `Loading past events for ${address} for every event.`,
         };
       }
       // doesn't exist
@@ -318,7 +367,8 @@ export class Listener {
     }
     return {
       success: true,
-      msg: `Listening to every address for every event.`,
+      msg: `Loading past events for every address(${this.contracts.length})
+            for every event.`,
     };
   }
 
@@ -381,7 +431,8 @@ export class Listener {
     }
     return {
       success: true,
-      msg: `Listening to every address for every event.`,
+      msg: `Listening to every address(${this.contracts.length})
+            for every event.`,
     };
   }
 }

@@ -1,4 +1,5 @@
 import Web3 from 'web3';
+import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
 import { PastEventOptions, EventData } from 'web3-eth-contract';
 import { StandardInterface, EventOptions } from '../config/abi/types';
@@ -26,6 +27,13 @@ export class Listen implements IListen {
     jsonInterface: AbiItem | AbiItem[],
     address: string,
   ) {
+    Sentry.addBreadcrumb({
+      message: 'Listen Constructor Called',
+      data: {
+        rpc: rpc,
+        address: address,
+      },
+    });
     this.rpc = rpc;
     this.jsonInterface = jsonInterface;
     this.address = address;
@@ -57,6 +65,15 @@ export class Listen implements IListen {
     eventHandler: (data: EventData[]) => void,
     eventOptions?: PastEventOptions,
   ) {
+    Sentry.addBreadcrumb({
+      message: 'Loading Past Events',
+      data: {
+        address: this.address,
+        rpc: this.rpc,
+        event: event,
+        eventOptions: eventOptions,
+      },
+    });
     this._contract
       .getPastEvents(event, eventOptions)
       .then((data) => eventHandler(data))
@@ -78,6 +95,15 @@ export class Listen implements IListen {
     eventOptions?: EventOptions,
   ) {
     if (event in this._contract.events) {
+      Sentry.addBreadcrumb({
+        message: 'Loading Past Events',
+        data: {
+          address: this.address,
+          rpc: this.rpc,
+          event: event,
+          eventOptions: eventOptions,
+        },
+      });
       this._contract.events[event](eventOptions)
         .on('data', (data) => eventHandler(data))
         .on('changed', (changed) => console.log(changed))
@@ -86,6 +112,6 @@ export class Listen implements IListen {
           throw err;
         })
         .on('connected', (str) => console.log(str));
-    } else console.log(`Event ${event} is not in contract events`);
+    } else console.warn(`Event ${event} is not in contract events`);
   }
 }
