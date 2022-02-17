@@ -32,12 +32,11 @@ export interface IDatabase {
       >
     | Promise<IContractSchema[]>
     | IContractSchema[];
-  isExistContract: (address: string) => boolean;
+  isExistContract: (address: string) => Promise<boolean>;
   insertContract: (data: IContractSchema) => void;
   updateContract({
     address,
     latestBlock,
-    network,
     events,
     jsonInterface,
   }: IContractSchema): void;

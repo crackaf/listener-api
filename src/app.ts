@@ -2,8 +2,7 @@ import express from 'express';
 import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 import { AbiItem } from 'web3-utils';
-import { EventModel } from './schema';
-import { IContractSchema, IEventSchema } from './utils/types';
+import { IContractSchema } from './utils/types';
 import abi from './config/abi/standardInterface.json';
 import { Listener } from './modules/listener';
 import db from './modules/database';
@@ -19,7 +18,7 @@ try {
   Sentry.captureException(e);
 }
 
-const listener: Listener = l;
+// const listener: Listener = l;
 
 Sentry.init({
   dsn: 'https://b0559d6508694b5da9915e251e3dbb48@o1146133.ingest.sentry.io/6214565',
@@ -47,30 +46,31 @@ app.use(Sentry.Handlers.tracingHandler());
 
 app.get('/testcontract', async (req, res) => {
   const contractObj: IContractSchema = {
-    network: 'https://rinkeby-light.eth.linkpool.io/',
+    network: 'rinkeby',
     jsonInterface: abi as AbiItem[],
     address: '0x0D72bad65008D1E3D42E9699dF619c7555A1311d',
-    events: ['TransferTo', 'TransferFrom'],
-    latestBlock: 12,
+    events: ['Transfer', 'OwnershipTransferred'],
+    latestBlock: 10165138,
   };
-  db.insertContract(contractObj);
-  res.send('inserted');
+  // db.insertContract(contractObj);
+
+  const flag = await db.isExistContract(
+    '0x0d72BAD65008D1E3D42E9699dffF619c7555A1311D',
+  );
+  if (flag) res.send('exists');
+  else res.send('doesnt exist');
 });
 
-app.get('/testevent', async (req, res) => {
-  const eventObj: IEventSchema = {
-    address: '0x706d17f6a15177865244B25aEfdfDBE1e572c7E6',
-    blockNumber: 70,
-    transactionHash: '0x706d17f6a15177865244B25aEfdfDBE1e572c7E6',
-    event: 'TransferFrom',
-    returnValues: {
-      owner: '0x369f70E1eb531E4523AEe4a66Fb9DF49E73e912E',
-      amount: 22,
-    },
-  };
-  // dbConnector.insertEvent(eventObj);
-  const newObj = await new EventModel(eventObj).save();
-  res.send(newObj);
+app.get('/testUpdate/:contract/:block', async (req, res) => {
+  const flag = await db.updateContract({
+    address: req.params.contract,
+    latestBlock: parseInt(req.params.block),
+  });
+  // ContractModel.exists({address})
+  // if (flag) res.send('updated');
+  // else res.send('not updated');
+  console.log(flag);
+  res.send(flag);
 });
 
 // The error handler must be before any other error middleware

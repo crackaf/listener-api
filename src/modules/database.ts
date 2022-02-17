@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import * as Sentry from '@sentry/node';
 import { ContractModel, EventModel } from '../schema';
 import { IContractSchema, IEventSchema } from '../utils/types';
 import { IDatabase } from '../utils/types';
@@ -31,8 +32,10 @@ export class Database implements IDatabase {
    * @param {string} address
    * @return {boolean}
    */
-  isExistContract(address: string) {
-    const contractObj = ContractModel.exists({ 'contractAddr asda': address });
+  async isExistContract(address: string): Promise<boolean> {
+    const contractObj = await ContractModel.exists({
+      address: { $regex: new RegExp(address, 'i') },
+    });
     if (!contractObj) return false;
     return true;
   }
@@ -54,11 +57,16 @@ export class Database implements IDatabase {
   }: IContractSchema) {
     ContractModel.findOne(
       {
-        address: address,
+        address: { $regex: new RegExp(address, 'i') },
+        network: { $regex: new RegExp(network, 'i') },
       },
       (err, result) => {
         if (err) {
-          console.error(err);
+          console.info(`Encountered error while inserting contract ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Error inserting contract.`,
+            data: { address: address, network: network },
+          });
         }
         if (!result) {
           new ContractModel({
@@ -68,6 +76,17 @@ export class Database implements IDatabase {
             events,
             jsonInterface,
           }).save();
+          console.info(`Added contract ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Contract added.`,
+            data: { address: address, network: network },
+          });
+        } else {
+          console.info(`Could not add contract ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Contract not added.`,
+            data: { address: address, network: network },
+          });
         }
       },
     );
@@ -90,7 +109,30 @@ export class Database implements IDatabase {
       transactionHash,
       blockNumber,
       returnValues,
-    }).save();
+    })
+      .save()
+      .then((result: IEventSchema) => {
+        if (!result) {
+          console.info(`Added event ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Event added.`,
+            data: { address: address, event: event },
+          });
+        } else {
+          console.info(`Could not add event ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Event not added.`,
+            data: { address: address, event: event },
+          });
+        }
+      })
+      .catch((err) => {
+        console.info(`Encountered error while inserting event ${address}`);
+        Sentry.addBreadcrumb({
+          message: `Error inserting event.`,
+          data: { address: address, event: event },
+        });
+      });
   }
 
   /**
@@ -112,32 +154,65 @@ export class Database implements IDatabase {
       },
     );
     EventModel.insertMany(data)
-      .then()
+      .then((result) => {
+        if (!result) {
+          console.info(`Added events ${data.length}`);
+          Sentry.addBreadcrumb({
+            message: `Events added.`,
+          });
+        } else {
+          console.info(`Could not add event ${data.length}`);
+          Sentry.addBreadcrumb({
+            message: `Events not added.`,
+          });
+        }
+      })
       .catch((err) => {
-        console.error(err);
+        console.info(`Encountered error while inserting events ${data.length}`);
+        Sentry.addBreadcrumb({
+          message: `Error inserting events.`,
+        });
       });
   }
 
   /**
-   *
+   * @param {string} contractAddr
    * @param {IContractSchema} contractObj
+   * @return {boolean}
    */
-  updateContract({
+  async updateContract({
     address,
     latestBlock,
     network,
     events,
     jsonInterface,
-  }: IContractSchema) {
-    const filter = { address: address };
+  }: Partial<IContractSchema>) {
+    const filter = {
+      address: { $regex: new RegExp(address, 'i') },
+      network: { $regex: new RegExp(network, 'i') },
+    };
     const update = {
-      address: address,
       latestBlock: latestBlock,
-      network: network,
       events: events,
       jsonInterface: jsonInterface,
     };
-    ContractModel.findOneAndUpdate(filter, update);
+    ContractModel.findOneAndUpdate(filter, update, {
+      new: true,
+    }).then((doc) => {
+      if (!doc) {
+        console.info(`Invalid address. Not updated ${address}`);
+        Sentry.addBreadcrumb({
+          message: `Contract not updated.`,
+          data: { address: address, network: network },
+        });
+      } else {
+        console.info(`Contract updated ${address}`);
+        Sentry.addBreadcrumb({
+          message: `Contract updated.`,
+          data: { address: address, network: network },
+        });
+      }
+    });
   }
 
   /**
@@ -151,22 +226,17 @@ export class Database implements IDatabase {
         const latestBlockData = data.find(
           (dataItem: IEventSchema) => dataItem.blockNumber == maxBlockNumber,
         );
-        EventModel.findOne(
-          {
-            blockNumber: { $gte: maxBlockNumber },
-            address: latestBlockData.address,
-          },
-          (err, result) => {
-            if (err) {
-              console.error(err);
-            }
-            if (!result) {
-              this.insertEvents(data);
-            }
-          },
-        );
+        this.insertEvents(data);
+        this.updateContract({
+          address: latestBlockData.address,
+          latestBlock: latestBlockData.blockNumber,
+        });
       }
     } else {
+      this.updateContract({
+        address: data.address,
+        latestBlock: data.blockNumber,
+      });
       this.insertEvent(data);
     }
   }
@@ -183,13 +253,37 @@ export class Database implements IDatabase {
     events,
     jsonInterface,
   }: Partial<IContractSchema>) {
-    return ContractModel.find({
-      address,
-      latestBlock,
-      network,
-      events,
-      jsonInterface,
-    }).exec();
+    return ContractModel.find(
+      {
+        address,
+        latestBlock,
+        network,
+        events,
+        jsonInterface,
+      },
+      (err, result) => {
+        if (err) {
+          console.info(`Encountered error while getting contract ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Error getting contract.`,
+            data: { address: address, network: network },
+          });
+        }
+        if (!result) {
+          console.info(`Contract found ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Contract found.`,
+            data: { address: address, network: network },
+          });
+        } else {
+          console.info(`Could not find contract ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Contract not found.`,
+            data: { address: address, network: network },
+          });
+        }
+      },
+    ).exec();
   }
 
   /**
@@ -204,13 +298,37 @@ export class Database implements IDatabase {
     event,
     returnValues,
   }: Partial<IEventSchema>) {
-    return EventModel.find({
-      address,
-      blockNumber,
-      transactionHash,
-      event,
-      returnValues,
-    }).exec();
+    return EventModel.find(
+      {
+        address,
+        blockNumber,
+        transactionHash,
+        event,
+        returnValues,
+      },
+      (err, result) => {
+        if (err) {
+          console.info(`Encountered error while getting event ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Error getting event.`,
+            data: { address: address, event: event },
+          });
+        }
+        if (!result) {
+          console.info(`Event found ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Event found.`,
+            data: { address: address, event: event },
+          });
+        } else {
+          console.info(`Could not find event ${address}`);
+          Sentry.addBreadcrumb({
+            message: `Event not found.`,
+            data: { address: address, network: event },
+          });
+        }
+      },
+    ).exec();
   }
 }
 
