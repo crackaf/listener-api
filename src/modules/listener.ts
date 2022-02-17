@@ -1,16 +1,15 @@
-/* eslint-disable max-len */
 import { AbiItem } from 'web3-utils';
 import { EventData } from 'web3-eth-contract';
 import { Listen } from './listen';
-import { Database } from './database';
 import NETWORKS from '../config/networks';
-export interface IContracts {
+import { IDatabase, IListen, IReturn } from '../utils/types';
+interface IContracts {
   [key: string]: {
     address: string;
-    listen: Listen;
+    listen: IListen;
     events: string[];
     latestBlock: number;
-    network: string;
+    network: keyof typeof NETWORKS;
   };
 }
 
@@ -21,13 +20,30 @@ export interface IsListening {
   };
 }
 
+/**
+ * Listener class to handle multiple contracts and multiple events
+ */
 export class Listener {
-  private _db: Database;
+  // database connector
+  private _db: IDatabase;
 
+  // contracts mapping
   public contracts: IContracts = {};
+
+  // address->event->boolean
   public isListening: IsListening = {};
 
-  constructor(dbConnector: Database) {
+  /**
+   * Contructor to initialize Listener.
+   * On initialization the database will be loaded
+   * and all the events will be on listen.
+   * @param {IDatabase} dbConnector Database connector to update and fetch data.
+   * It must include functions named `loadDb`,`isExistContract`,`insertContract`
+   * ,`insertEvent` and `eventHandler`.
+   * Furthermore the database can be of any type. It depends on your db, we are
+   * only using the above mentioned function that should be implemented.
+   */
+  constructor(dbConnector: IDatabase) {
     this._db = dbConnector;
     this._loadDb().finally(() => {
       // load past events then current
@@ -37,8 +53,11 @@ export class Listener {
     });
   }
 
+  /**
+   * This function will load the database and
+   */
   private async _loadDb() {
-    const dataList = await this._db.loadDb();
+    const dataList = await this._db.getContracts();
     for (const {
       network,
       jsonInterface,
@@ -56,12 +75,22 @@ export class Listener {
     }
   }
 
+  /**
+   * Updates the latest block number.
+   * First checks if the new block number is greater it will update
+   * @param {string} address address of contract.
+   * @param {number} newBlockNumber Block number which you want to update.
+   */
   private _updateBlock(address: string, newBlockNumber: number) {
     if (this.contracts[address].latestBlock < newBlockNumber) {
       this.contracts[address].latestBlock = newBlockNumber;
     }
   }
 
+  /**
+   * Wrapper for the database event handler
+   * @param {EventData | EventData[]} data Event data which you want to handle
+   */
   private _eventHandlerWrapper(data: EventData | EventData[]) {
     if (Array.isArray(data)) {
       if (data.length > 0) {
@@ -80,6 +109,12 @@ export class Listener {
     this._db.eventHandler(data);
   }
 
+  /**
+   * Updating isListening boolean
+   * @param {string} address Address of contract
+   * @param {string} event Event name
+   * @param {boolean} value Value which you want to insert in isListening
+   */
   private _updateListening(address: string, event: string, value: boolean) {
     if (address in this.isListening) {
       this.isListening[address][event] = value;
@@ -89,6 +124,12 @@ export class Listener {
     }
   }
 
+  /**
+   * Get value of isListening object
+   * @param {string} address Address of contract
+   * @param {string} event Event name
+   * @return {boolean} Value agaist address->event
+   */
   private _getListening(address: string, event: string): boolean {
     if (address in this.isListening) {
       if (event in this.isListening[address]) {
@@ -98,9 +139,16 @@ export class Listener {
     return false;
   }
 
+  /**
+   * For adding the Listen to runtime storage
+   * @param {Listen} _listen Listen object
+   * @param {string} _network Network name
+   * @param {string[]} _events Events names
+   * @param {number} _fromBlock Latest block number
+   */
   private _add(
     _listen: Listen,
-    _network: string,
+    _network: keyof typeof NETWORKS,
     _events: string[],
     _fromBlock: number,
   ) {
@@ -123,13 +171,22 @@ export class Listener {
     });
   }
 
+  /**
+   * Add the new contract to runtime storage and Database
+   * @param {string} network  Network name
+   * @param {AbiItem | AbiItem[]} jsonInterface Abi of contract
+   * @param {string} address Address of contract
+   * @param {string[]} events Events names
+   * @param {number} latestBlock Latest block number
+   * @return {IReturn} sccuess with msg
+   */
   add(
     network: keyof typeof NETWORKS,
     jsonInterface: AbiItem | AbiItem[],
     address: string,
     events: string | string[] = [],
     latestBlock: number = 0,
-  ) {
+  ): IReturn {
     // array conversion
     if (!Array.isArray(events)) {
       events = [events];
@@ -143,7 +200,8 @@ export class Listener {
     if (inLocal && inDb) {
       return {
         success: false,
-        msg: `Address ${address} already exsist in db. If you are adding events, please use addEvent.`,
+        msg: `Address ${address} already exsist in db. 
+        If you are adding events, please use addEvent.`,
       };
     }
 
@@ -173,7 +231,13 @@ export class Listener {
     };
   }
 
-  addEvent(address: string, event: string) {
+  /**
+   * Add event name to the runtime storage and starts listening to this event
+   * @param {string} address Contract address
+   * @param {string} event Event name of contract
+   * @return {IReturn} sccuess with msg
+   */
+  addEvent(address: string, event: string): IReturn {
     if (!(address in this.contracts)) {
       if (!this.contracts[address].events.includes(event)) {
         // add to array
@@ -184,7 +248,7 @@ export class Listener {
           events: this.contracts[address].events,
           latestBlock: this.contracts[address].latestBlock,
           network: this.contracts[address].network,
-          jsonInterface: this.contracts[address].listen.jsonInterface,
+          jsonInterface: this.contracts[address].listen.getJsonInterface(),
         });
         // listen to past events and then listen
         this.loadPastEvents(address).finally(() => {
@@ -206,7 +270,13 @@ export class Listener {
     };
   }
 
-  async loadPastEvents(address?: string) {
+  /**
+   * @async Listen to all the past events
+   * @param {string} address? Optional contract address.
+   * If address is given it will only listen to this contract's events.
+   * @return {Promise<IReturn>} promise of success with msg
+   */
+  async loadPastEvents(address?: string): Promise<IReturn> {
     if (address) {
       // for sepcific contract and for every event
       if (Object.prototype.hasOwnProperty.call(this.contracts, address)) {
@@ -252,7 +322,13 @@ export class Listener {
     };
   }
 
-  async listenEvents(address?: string) {
+  /**
+   * @async Listen to current events
+   * @param {string} address? Optional contract address.
+   * If address is given it will only listen to this contract's events.
+   * @return {Promise<IReturn>} promise of success with msg
+   */
+  async listenEvents(address?: string): Promise<IReturn> {
     if (address) {
       // for sepcific contract and for every event
       if (Object.prototype.hasOwnProperty.call(this.contracts, address)) {

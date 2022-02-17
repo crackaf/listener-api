@@ -1,7 +1,7 @@
 import express from 'express';
 import { AbiItem } from 'web3-utils';
 import { EventModel } from './schema';
-import { IContractSchema, IEventSchema } from './schema';
+import { IContractSchema, IEventSchema } from './utils/types';
 import abi from './config/abi/standardInterface.json';
 import { Listener } from './modules/listener';
 import db from './modules/database';

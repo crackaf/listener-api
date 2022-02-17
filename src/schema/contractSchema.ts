@@ -1,13 +1,5 @@
 import { model, Schema } from 'mongoose';
-import { AbiItem } from 'web3-utils';
-
-export interface IContractSchema {
-  address: string;
-  latestBlock: number;
-  network: string;
-  events: string[];
-  jsonInterface: AbiItem | AbiItem[];
-}
+import { IContractSchema } from '../utils/types';
 
 const contractSchema = new Schema<IContractSchema>({
   address: {

@@ -1,14 +1,5 @@
 import { model, Schema } from 'mongoose';
-
-export interface IEventSchema {
-  address: string;
-  blockNumber: number;
-  transactionHash: string;
-  event: string;
-  returnValues: {
-    [key: string]: any;
-  };
-}
+import { IEventSchema } from '../utils/types';
 
 const eventSchema = new Schema<IEventSchema>({
   address: {

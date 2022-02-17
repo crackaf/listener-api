@@ -2,11 +2,12 @@ import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 import { PastEventOptions, EventData } from 'web3-eth-contract';
 import { StandardInterface, EventOptions } from '../config/abi/types';
+import { IListen } from '../utils/types';
 
 /**
  * Listen to the past and current events of Contract
  */
-export class Listen {
+export class Listen implements IListen {
   public readonly address: string;
   public readonly rpc: string;
   public readonly jsonInterface: AbiItem | AbiItem[];
@@ -38,6 +39,14 @@ export class Listen {
   }
 
   /**
+   * JsonInterface/Abi of the contract
+   * @return {AbiItem|AbiItem[]}
+   */
+  getJsonInterface(): AbiItem | AbiItem[] {
+    return this.jsonInterface;
+  }
+
+  /**
    * Load the past events
    * @param {string} event Event name
    * @param {()} eventHandler Function to handle the emitted data
@@ -65,7 +74,7 @@ export class Listen {
    */
   listen(
     event: keyof StandardInterface['events'],
-    eventHandler: (data: EventData) => void,
+    eventHandler: (data: EventData | EventData) => void,
     eventOptions?: EventOptions,
   ) {
     if (event in this._contract.events) {

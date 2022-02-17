@@ -1,13 +1,9 @@
 import mongoose from 'mongoose';
-import { EventData } from 'web3-eth-contract';
-import {
-  ContractModel,
-  EventModel,
-  IContractSchema,
-  IEventSchema,
-} from '../schema';
+import { ContractModel, EventModel } from '../schema';
+import { IContractSchema, IEventSchema } from '../utils/types';
+import { IDatabase } from '../utils/types';
 
-export class Database {
+export class Database implements IDatabase {
   private static _instance: Database;
 
   private constructor() {
@@ -24,9 +20,9 @@ export class Database {
   }
 
   /**
-   *@return {IContractSchema[]}
+   * @return {IContractSchema[]}
    */
-  loadDb() {
+  getContracts() {
     return ContractModel.find({}).exec();
   }
 
@@ -79,7 +75,7 @@ export class Database {
 
   /**
    *
-   * @param {EventData} eventObject
+   * @param {IEventSchema} eventObject
    */
   insertEvent({
     address,
@@ -87,7 +83,7 @@ export class Database {
     transactionHash,
     blockNumber,
     returnValues,
-  }: EventData) {
+  }: IEventSchema) {
     new EventModel({
       address,
       event,
@@ -99,10 +95,10 @@ export class Database {
 
   /**
    *
-   * @param {EventData[]} events
+   * @param {IEventSchema[]} events
    * @return {void}
    */
-  insertEvents(events: EventData[]) {
+  insertEvents(events: IEventSchema[]) {
     if (events.length <= 0) return;
     const data: IEventSchema[] = events.map(
       ({ address, event, transactionHash, blockNumber, returnValues }) => {
@@ -146,14 +142,14 @@ export class Database {
 
   /**
    *
-   * @param {EventData | EventData[]} data
+   * @param {IEventSchema | IEventSchema[]} data
    */
-  eventHandler(data: EventData | EventData[]) {
+  eventHandler(data: IEventSchema | IEventSchema[]) {
     if (Array.isArray(data)) {
       if (data.length > 0) {
         const maxBlockNumber = Math.max(...data.map((d) => d.blockNumber));
         const latestBlockData = data.find(
-          (dataItem: EventData) => dataItem.blockNumber == maxBlockNumber,
+          (dataItem: IEventSchema) => dataItem.blockNumber == maxBlockNumber,
         );
         EventModel.findOne(
           {
