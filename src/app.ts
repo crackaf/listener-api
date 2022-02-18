@@ -13,14 +13,14 @@ const app = express();
 const port = 3000;
 
 // Listener calling
-let l = null;
+// let l = null;
 try {
-  l = new Listener(db);
+  // l = new Listener(db);
 } catch (e) {
   Sentry.captureException(e);
 }
 
-const listener: Listener = l;
+// const listener: Listener = l;
 
 Sentry.init({
   dsn: 'https://b0559d6508694b5da9915e251e3dbb48@o1146133.ingest.sentry.io/6214565',
@@ -46,53 +46,97 @@ app.use(Sentry.Handlers.tracingHandler());
 
 // All controllers should live here
 
+app.get('/contracts', (req, res) => {
+  db.fetchContract(req.query)
+    .then((result) => {
+      if (result.length > 0) {
+        console.info(`Contract found`);
+        Sentry.addBreadcrumb({
+          message: `Contract found.`,
+          data: req.query,
+        });
+      } else {
+        console.info(`Could not find contract.`);
+        Sentry.addBreadcrumb({
+          message: `Contract not found.`,
+          data: req.query,
+        });
+      }
+      res.json(result);
+    })
+    .catch((err) => {
+      console.info(`Encountered error while getting contract.`);
+      Sentry.addBreadcrumb({
+        message: `Error getting contract.`,
+        data: { error: err, ...req.query },
+      });
+      res.json(err);
+    });
+});
+
+app.get('/events', (req, res) => {
+  db.fetchEvent(req.query)
+    .then((result) => {
+      if (result.length > 0) {
+        console.info(`Event found`);
+        Sentry.addBreadcrumb({
+          message: `Event found.`,
+          data: req.query,
+        });
+        console.info(result);
+      } else {
+        console.info(`Could not find event`);
+        Sentry.addBreadcrumb({
+          message: `Event not found.`,
+          data: req.query,
+        });
+      }
+      res.json(result);
+    })
+    .catch((err) => {
+      console.info(`Encountered error while getting event`);
+      Sentry.addBreadcrumb({
+        message: `Error getting event.`,
+        data: { error: err, ...req.query },
+      });
+      res.json(err);
+    });
+});
+
+// app.get('/addcontractevent', (req, res) => {
+
+// })
+
 app.get('/testcontract', async (req, res) => {
   const contractObj: IContractSchema = {
     network: 'rinkeby',
     jsonInterface: abi as AbiItem[],
-    address: '0x0D72bad65008D1E3D42E9699dF619c7555A1311d',
+    address: '12345',
     events: ['Transfer', 'OwnershipTransferred'],
     latestBlock: 10165138,
   };
-  // db.insertContract(contractObj);
-
-  const flag = await db.isExistContract(
-    '0x0d72BAD65008D1E3D42E9699dffF619c7555A1311D',
-  );
-  if (flag) res.send('exists');
-  else res.send('doesnt exist');
+  db.insertContract(contractObj);
 });
 
-app.get('/testUpdate/:contract/:block', async (req, res) => {
-  const flag = await db.updateContract({
+// app.post('/addcontractevent', (req, res) => {
+//   const address=
+//   res.status(200);
+// });
+
+app.get('/testUpdate/:contract/', async (req, res) => {
+  const { blockNum, events } = req.query as {
+    blockNum: string;
+    events: string;
+  };
+  await db.updateContract({
     address: req.params.contract,
-    latestBlock: parseInt(req.params.block),
+    latestBlock: parseInt(blockNum),
+    events: JSON.parse(events),
   });
   // ContractModel.exists({address})
   // if (flag) res.send('updated');
   // else res.send('not updated');
-  console.log(flag);
-  res.send(flag);
-});
-
-app.get('/testEvent', async (req, res) => {
-  const eventObj: IEventSchema = {
-    address: '0x0d72BAD65008D1E3D42E9699dffF619c7555A1311D',
-    rpc: 'some rpc',
-    blockNumber: 45,
-    transactionHash: '0x0d72BAD65008D1E3D42E9699dffF619c7555A1311D',
-    event: 'Transfer',
-    returnValues: {
-      tokenId: '1545',
-    },
-  };
-  db.insertEvent(eventObj);
-  res.send('Inserted');
-});
-
-app.get('/test', async (req, res) => {
-  const obj = await EventModel.findById('620f6928319f4a6f5a8c0ca7');
-  res.send(obj);
+  res.status(200);
 });
 
 // The error handler must be before any other error middleware

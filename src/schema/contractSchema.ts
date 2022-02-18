@@ -24,6 +24,6 @@ const contractSchema = new Schema<IContractSchema>({
       type: Object,
     },
   ],
-});
+}).index({ address: 1, network: 1 }, { unique: true });
 
 export const ContractModel = model('Contract', contractSchema);

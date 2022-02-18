@@ -26,6 +26,6 @@ const eventSchema = new Schema<IEventSchema>({
     type: Object,
     required: true,
   },
-});
+}).index({ address: 1, rpc: 1 }, { unique: true });
 
 export const EventModel = model('Event', eventSchema);
