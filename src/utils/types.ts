@@ -3,6 +3,11 @@ import { AbiItem } from 'web3-utils';
 import { PastEventOptions, EventData } from 'web3-eth-contract';
 import { StandardInterface, EventOptions } from '../config/abi/types';
 
+// types
+export interface ApiEventData extends EventData {
+  rpc: string;
+}
+
 // schema types
 export interface IContractSchema {
   address: string;
@@ -11,7 +16,7 @@ export interface IContractSchema {
   events: string[];
   jsonInterface: AbiItem | AbiItem[];
 }
-export interface IEventSchema {
+export interface IEventSchema extends Partial<ApiEventData> {
   address: string;
   rpc: string;
   blockNumber: number;
@@ -50,12 +55,12 @@ export interface IListen {
   getJsonInterface: () => AbiItem | AbiItem[];
   loadPastEvents: (
     event: string,
-    eventHandler: (data: EventData | EventData[]) => void,
+    eventHandler: (data: ApiEventData[]) => void,
     eventOptions?: PastEventOptions,
   ) => void;
   listen: (
     event: keyof StandardInterface['events'],
-    eventHandler: (data: EventData) => void,
+    eventHandler: (data: ApiEventData) => void,
     eventOptions?: EventOptions,
   ) => void;
 }

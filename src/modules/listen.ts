@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
 import { PastEventOptions, EventData } from 'web3-eth-contract';
 import { StandardInterface, EventOptions } from '../config/abi/types';
-import { IListen } from '../utils/types';
+import { ApiEventData, IListen } from '../utils/types';
 
 /**
  * Listen to the past and current events of Contract
@@ -78,7 +78,7 @@ export class Listen implements IListen {
    */
   loadPastEvents(
     event: string,
-    eventHandler: (data: EventData[]) => void,
+    eventHandler: (data: ApiEventData[]) => void,
     eventOptions?: PastEventOptions,
   ) {
     Sentry.addBreadcrumb({
@@ -92,7 +92,13 @@ export class Listen implements IListen {
     });
     this._contract
       .getPastEvents(event, eventOptions)
-      .then((data) => eventHandler(data))
+      .then((data) =>
+        eventHandler(
+          data.map((e) => {
+            return { ...e, rpc: this.rpc };
+          }),
+        ),
+      )
       .catch((err) => {
         console.error(err);
         throw err;
@@ -107,7 +113,7 @@ export class Listen implements IListen {
    */
   listen(
     event: keyof StandardInterface['events'],
-    eventHandler: (data: EventData | EventData) => void,
+    eventHandler: (data: ApiEventData) => void,
     eventOptions?: EventOptions,
   ) {
     if (event in this._contract.events) {
@@ -121,7 +127,9 @@ export class Listen implements IListen {
         },
       });
       this._contract.events[event](eventOptions)
-        .on('data', (data) => eventHandler(data))
+        .on('data', (data: EventData) =>
+          eventHandler({ ...data, rpc: this.rpc }),
+        )
         .on('changed', (changed) => console.info(changed))
         .on('error', (err) => {
           console.error(err);

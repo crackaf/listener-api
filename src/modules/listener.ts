@@ -1,9 +1,8 @@
 import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
-import { EventData } from 'web3-eth-contract';
 import { Listen } from './listen';
 import NETWORKS from '../config/networks';
-import { IDatabase, IListen, IReturn } from '../utils/types';
+import { ApiEventData, IDatabase, IListen, IReturn } from '../utils/types';
 interface IContracts {
   [key: string]: {
     address: string;
@@ -124,9 +123,10 @@ export class Listener {
 
   /**
    * Wrapper for the database event handler
-   * @param {EventData | EventData[]} data Event data which you want to handle
+   * @param {ApiEventData | ApiEventData[]} data
+   * Event data which you want to handle
    */
-  private _eventHandlerWrapper(data: EventData | EventData[]) {
+  private _eventHandlerWrapper(data: ApiEventData | ApiEventData[]) {
     if (Array.isArray(data)) {
       if (data.length > 0) {
         // data is array
@@ -334,7 +334,8 @@ export class Listener {
         for (const e of this.contracts[address].events) {
           this.contracts[address].listen.loadPastEvents(
             e,
-            (data: EventData | EventData[]) => this._eventHandlerWrapper(data),
+            (data: ApiEventData | ApiEventData[]) =>
+              this._eventHandlerWrapper(data),
             {
               fromBlock: this.contracts[address].latestBlock,
             },
@@ -358,7 +359,8 @@ export class Listener {
         for (const e of this.contracts[addr].events) {
           this.contracts[addr].listen.loadPastEvents(
             e,
-            (data: EventData | EventData[]) => this._eventHandlerWrapper(data),
+            (data: ApiEventData | ApiEventData[]) =>
+              this._eventHandlerWrapper(data),
             {
               fromBlock: this.contracts[addr].latestBlock,
             },
@@ -393,7 +395,7 @@ export class Listener {
             // not listening to this event
             this.contracts[address].listen.listen(
               e as unknown as any,
-              (data: EventData | EventData[]) =>
+              (data: ApiEventData | ApiEventData[]) =>
                 this._eventHandlerWrapper(data),
             );
             this._updateListening(address, e, true);
@@ -422,7 +424,7 @@ export class Listener {
             // not listening to this event
             this.contracts[address].listen.listen(
               e as unknown as any,
-              (data: EventData | EventData[]) =>
+              (data: ApiEventData | ApiEventData[]) =>
                 this._eventHandlerWrapper(data),
             );
             this._updateListening(addr, e, true);
