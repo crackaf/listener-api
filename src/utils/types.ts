@@ -13,6 +13,7 @@ export interface IContractSchema {
 }
 export interface IEventSchema {
   address: string;
+  rpc: string;
   blockNumber: number;
   transactionHash: string;
   event: string;
@@ -40,9 +41,9 @@ export interface IDatabase {
     events,
     jsonInterface,
   }: IContractSchema): void;
-  insertEvent: (data: EventData) => void;
-  insertEvents: (data: EventData[]) => void;
-  eventHandler: (data: EventData | EventData[]) => void;
+  insertEvent: (data: IEventSchema) => void;
+  insertEvents: (data: IEventSchema[]) => void;
+  eventHandler: (data: IEventSchema | IEventSchema[]) => void;
 }
 
 export interface IListen {

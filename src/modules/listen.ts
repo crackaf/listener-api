@@ -105,7 +105,9 @@ export class Listen implements IListen {
         },
       });
       this._contract.events[event](eventOptions)
-        .on('data', (data) => eventHandler(data))
+        .on('data', (data) => {
+          eventHandler(data);
+        })
         .on('changed', (changed) => console.log(changed))
         .on('error', (err) => {
           console.error(err);

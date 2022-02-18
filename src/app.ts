@@ -2,10 +2,11 @@ import express from 'express';
 import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 import { AbiItem } from 'web3-utils';
-import { IContractSchema } from './utils/types';
+import { IContractSchema, IEventSchema } from './utils/types';
 import abi from './config/abi/standardInterface.json';
 import { Listener } from './modules/listener';
 import db from './modules/database';
+import { EventModel } from './schema';
 
 const app = express();
 const port = 3000;
@@ -18,7 +19,7 @@ try {
   Sentry.captureException(e);
 }
 
-// const listener: Listener = l;
+const listener: Listener = l;
 
 Sentry.init({
   dsn: 'https://b0559d6508694b5da9915e251e3dbb48@o1146133.ingest.sentry.io/6214565',
@@ -71,6 +72,26 @@ app.get('/testUpdate/:contract/:block', async (req, res) => {
   // else res.send('not updated');
   console.log(flag);
   res.send(flag);
+});
+
+app.get('/testEvent', async (req, res) => {
+  const eventObj: IEventSchema = {
+    address: '0x0d72BAD65008D1E3D42E9699dffF619c7555A1311D',
+    rpc: 'some rpc',
+    blockNumber: 45,
+    transactionHash: '0x0d72BAD65008D1E3D42E9699dffF619c7555A1311D',
+    event: 'Transfer',
+    returnValues: {
+      tokenId: '1545',
+    },
+  };
+  db.insertEvent(eventObj);
+  res.send('Inserted');
+});
+
+app.get('/test', async (req, res) => {
+  const obj = await EventModel.findById('620f6928319f4a6f5a8c0ca7');
+  res.send(obj);
 });
 
 // The error handler must be before any other error middleware

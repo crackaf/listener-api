@@ -99,12 +99,14 @@ export class Database implements IDatabase {
   insertEvent({
     address,
     event,
+    rpc,
     transactionHash,
     blockNumber,
     returnValues,
   }: IEventSchema) {
     new EventModel({
       address,
+      rpc,
       event,
       transactionHash,
       blockNumber,
@@ -112,7 +114,7 @@ export class Database implements IDatabase {
     })
       .save()
       .then((result: IEventSchema) => {
-        if (!result) {
+        if (result) {
           console.info(`Added event ${address}`);
           Sentry.addBreadcrumb({
             message: `Event added.`,
@@ -143,9 +145,10 @@ export class Database implements IDatabase {
   insertEvents(events: IEventSchema[]) {
     if (events.length <= 0) return;
     const data: IEventSchema[] = events.map(
-      ({ address, event, transactionHash, blockNumber, returnValues }) => {
+      ({ address, rpc, event, transactionHash, blockNumber, returnValues }) => {
         return {
           address,
+          rpc,
           event,
           transactionHash,
           blockNumber,
@@ -155,7 +158,7 @@ export class Database implements IDatabase {
     );
     EventModel.insertMany(data)
       .then((result) => {
-        if (!result) {
+        if (result) {
           console.info(`Added events ${data.length}`);
           Sentry.addBreadcrumb({
             message: `Events added.`,
@@ -199,7 +202,7 @@ export class Database implements IDatabase {
     ContractModel.findOneAndUpdate(filter, update, {
       new: true,
     }).then((doc) => {
-      if (!doc) {
+      if (doc) {
         console.info(`Invalid address. Not updated ${address}`);
         Sentry.addBreadcrumb({
           message: `Contract not updated.`,

@@ -6,6 +6,10 @@ const eventSchema = new Schema<IEventSchema>({
     type: String,
     required: true,
   },
+  rpc: {
+    type: String,
+    required: true,
+  },
   blockNumber: {
     type: Number,
     required: true,
