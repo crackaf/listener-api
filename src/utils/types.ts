@@ -6,8 +6,8 @@ import { StandardInterface, EventOptions } from '../config/abi/types';
 // schema types
 export interface IContractSchema {
   address: string;
-  latestBlock: number;
   network: string;
+  latestBlock: number;
   events: string[];
   jsonInterface: AbiItem | AbiItem[];
 }

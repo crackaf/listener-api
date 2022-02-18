@@ -20,5 +20,15 @@ module.exports = {
     'no-unused-vars': 'warn',
     'object-curly-spacing': ['error', 'always'],
     'no-else-return': 'warn',
+    'no-param-reassign': [
+      'error',
+      { props: true, ignorePropertyModificationsFor: ['state', 'memo'] },
+    ],
+    'no-nested-ternary': 0,
+    'no-console': ['warn', { allow: ['info', 'warn', 'error', 'debug'] }],
+    'no-plusplus': 0,
+    'prefer-destructuring': ['warn', { object: true, array: false }],
+    'no-underscore-dangle': 0,
+    'import/prefer-default-export': 0,
   },
 };

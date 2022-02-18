@@ -34,16 +34,32 @@ export class Listen implements IListen {
         address: address,
       },
     });
+
+    if (!Web3.utils.isAddress(address)) {
+      console.warn('Address not valid!');
+      Sentry.addBreadcrumb({
+        message: 'Address not valid!',
+        data: {
+          rpc: rpc,
+          address: address,
+        },
+      });
+    }
+
     this.rpc = rpc;
     this.jsonInterface = jsonInterface;
     this.address = address;
 
     // making contract instance
-    this._web3 = new Web3(this.rpc);
-    this._contract = new this._web3.eth.Contract(
-      this.jsonInterface,
-      this.address,
-    ) as any as StandardInterface;
+    try {
+      this._web3 = new Web3(this.rpc);
+      this._contract = new this._web3.eth.Contract(
+        this.jsonInterface,
+        this.address,
+      ) as any as StandardInterface;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -105,15 +121,13 @@ export class Listen implements IListen {
         },
       });
       this._contract.events[event](eventOptions)
-        .on('data', (data) => {
-          eventHandler(data);
-        })
-        .on('changed', (changed) => console.log(changed))
+        .on('data', (data) => eventHandler(data))
+        .on('changed', (changed) => console.info(changed))
         .on('error', (err) => {
           console.error(err);
           throw err;
         })
-        .on('connected', (str) => console.log(str));
+        .on('connected', (str) => console.info(str));
     } else console.warn(`Event ${event} is not in contract events`);
   }
 }

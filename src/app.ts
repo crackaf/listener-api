@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import express from 'express';
 import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
@@ -102,10 +103,12 @@ app.use(Sentry.Handlers.errorHandler());
 app.use(function onError(err, req, res, next) {
   // The error id is attached to `res.sentry` to be returned
   // and optionally displayed to the user for support.
+  console.error(err);
+  // eslint-disable-next-line no-param-reassign
   res.statusCode = 500;
   res.end(res.sentry + '\n');
 });
 
 app.listen(port, () => {
-  return console.log(`Express is listening at http://localhost:${port}`);
+  return console.info(`Express is listening at http://localhost:${port}`);
 });

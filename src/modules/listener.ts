@@ -233,9 +233,10 @@ export class Listener {
     events: string | string[] = [],
     latestBlock: number = 0,
   ): IReturn {
+    let _events = events;
     // array conversion
-    if (!Array.isArray(events)) {
-      events = [events];
+    if (!Array.isArray(_events)) {
+      _events = [_events];
     }
 
     // rpc
@@ -260,7 +261,7 @@ export class Listener {
         network,
         jsonInterface,
         address,
-        events,
+        events: _events,
         latestBlock,
       });
     }
@@ -269,14 +270,14 @@ export class Listener {
       this._add(
         new Listen(rpc, jsonInterface, address),
         network,
-        events,
+        _events,
         latestBlock,
       );
     }
 
     return {
       success: true,
-      msg: `Added contract ${address} with events ${events}.`,
+      msg: `Added contract ${address} with events ${_events}.`,
     };
   }
 
