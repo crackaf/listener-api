@@ -226,13 +226,13 @@ export class Listener {
    * @param {number} latestBlock Latest block number
    * @return {IReturn} sccuess with msg
    */
-  add(
+  async add(
     network: keyof typeof NETWORKS,
     jsonInterface: AbiItem | AbiItem[],
     address: string,
     events: string | string[] = [],
     latestBlock: number = 0,
-  ): IReturn {
+  ): Promise<IReturn> {
     let _events = events;
     // array conversion
     if (!Array.isArray(_events)) {
@@ -243,7 +243,7 @@ export class Listener {
     const rpc = NETWORKS[network];
 
     // already exist in db?
-    const inDb = this._db.isExistContract(address);
+    const inDb = await this._db.isExistContract(address, network);
     // already exist in runtime storage?
     const inLocal = address in this.contracts;
 
@@ -284,21 +284,27 @@ export class Listener {
   /**
    * Add event name to the runtime storage and starts listening to this event
    * @param {string} address Contract address
+   * @param {string} network Network of Contract
    * @param {string} event Event name of contract
    * @return {IReturn} sccuess with msg
    */
-  addEvent(address: string, event: string): IReturn {
-    if (!(address in this.contracts)) {
+  addEvent(
+    address: string,
+    network: keyof typeof NETWORKS,
+    event: string,
+  ): IReturn {
+    if (
+      address in this.contracts &&
+      this.contracts[address].network === network
+    ) {
       if (!this.contracts[address].events.includes(event)) {
         // add to array
         this.contracts[address].events.push(event);
         // update to db
         this._db.updateContract({
           address: this.contracts[address].address,
-          events: this.contracts[address].events,
-          latestBlock: this.contracts[address].latestBlock,
           network: this.contracts[address].network,
-          jsonInterface: this.contracts[address].listen.getJsonInterface(),
+          events: this.contracts[address].events,
         });
         // listen to past events and then listen
         this.loadPastEvents(address).finally(() => {
@@ -317,6 +323,27 @@ export class Listener {
     return {
       success: false,
       msg: `Address ${address} does not exist in db!`,
+    };
+  }
+
+  /**
+   * Add event name to the runtime storage and starts listening to this event
+   * @param {string} address Contract address
+   * @param {string} network Network of Contract
+   * @param {string[]} events Event name of contract
+   * @return {IReturn} sccuess with msg
+   */
+  addEvents(
+    address: string,
+    network: keyof typeof NETWORKS,
+    events: string[],
+  ): IReturn {
+    for (const event of events) {
+      this.addEvent(address, network, event);
+    }
+    return {
+      success: true,
+      msg: `Event ${events} added in address ${address}!`,
     };
   }
 

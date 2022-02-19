@@ -9,7 +9,8 @@ export default {
   mainnet: `https://mainnet.infura.io/v3/${process.env.INFURA_IO_KEY}`,
 
   // bsc testnet
-  bscTestnet: 'https://data-seed-prebsc-2-s3.binance.org:8545',
+  bscTestnet:
+    'wss://speedy-nodes-nyc.moralis.io/f8e37d911b5231fe3fdde3a6/bsc/testnet/ws',
 
   // bsc mainnet
   bscMainnet: 'https://bsc-dataseed.binance.org',

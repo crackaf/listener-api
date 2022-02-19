@@ -38,14 +38,9 @@ export interface IDatabase {
       >
     | Promise<IContractSchema[]>
     | IContractSchema[];
-  isExistContract: (address: string) => Promise<boolean>;
-  insertContract: (data: IContractSchema) => void;
-  updateContract({
-    address,
-    latestBlock,
-    events,
-    jsonInterface,
-  }: IContractSchema): void;
+  isExistContract: (address: string, network: string) => Promise<boolean>;
+  insertContract: (data: Partial<IContractSchema>) => void;
+  updateContract(data: Partial<IContractSchema>): void;
   insertEvent: (data: IEventSchema) => void;
   insertEvents: (data: IEventSchema[]) => void;
   eventHandler: (data: IEventSchema | IEventSchema[]) => void;

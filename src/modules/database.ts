@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
 import * as Sentry from '@sentry/node';
 import { ContractModel, EventModel } from '../schema';
-import { IContractSchema, IEventSchema } from '../utils/types';
+import { IContractSchema, IEventSchema, IReturn } from '../utils/types';
 import { IDatabase } from '../utils/types';
-import { Console } from '@sentry/node/dist/integrations';
 
 /**
  * Database management class
@@ -46,8 +45,7 @@ export class Database implements IDatabase {
     const contractObj = await ContractModel.exists({
       address: { $regex: new RegExp(address, 'i') },
     });
-    if (!contractObj) return false;
-    return true;
+    return !!contractObj;
   }
 
   /**
@@ -58,43 +56,50 @@ export class Database implements IDatabase {
    * @param {string[]} events
    * @param {number} latestBlock
    */
-  insertContract({
+  async insertContract({
     address,
     latestBlock,
     network,
     events,
     jsonInterface,
-  }: IContractSchema) {
-    new ContractModel({
+  }: IContractSchema): Promise<IReturn> {
+    const data = await new ContractModel({
       address,
       latestBlock,
       network,
       events,
       jsonInterface,
-    })
-      .save()
-      .then((result) => {
-        if (result) {
-          console.info(`Added contract ${address}`);
-          Sentry.addBreadcrumb({
-            message: `Contract added.`,
-            data: { address: address, network: network },
-          });
-        } else {
-          console.info(`Could not add contract ${address}`);
-          Sentry.addBreadcrumb({
-            message: `Contract not added.`,
-            data: { address: address, network: network },
-          });
-        }
-      })
-      .catch((err) => {
-        console.info(`Encountered error while inserting contract ${address}`);
-        Sentry.addBreadcrumb({
-          message: `Error inserting contract.`,
-          data: { error: err, address: address, network: network },
-        });
-      });
+    }).save();
+    return {
+      success: !!data,
+      msg: data as any,
+    };
+
+    // .then((result) => {
+    //   if (result) {
+    //     console.info(`Added contract ${address}`);
+    //     Sentry.addBreadcrumb({
+    //       message: `Contract added.`,
+    //       data: { address: address, network: network },
+    //     });
+    //   } else {
+    //     console.info(`Could not add contract ${address}`);
+    //     Sentry.addBreadcrumb({
+    //       message: `Contract not added.`,
+    //       data: { address: address, network: network },
+    //     });
+    //   }
+    // })
+    // .catch((err: Error) => {
+    //   console.info(
+    //     `Encountered error while inserting contract ${address}.
+    //      Error: ${err.message}`,
+    //   );
+    //   Sentry.addBreadcrumb({
+    //     message: `Error inserting contract.`,
+    //     data: { error: err, address: address, network: network },
+    //   });
+    // });
   }
 
   /**
@@ -133,13 +138,24 @@ export class Database implements IDatabase {
           });
         }
       })
-      .catch((err) => {
-        console.info(`Encountered error while inserting event ${address}`);
+      .catch((err: Error) => {
+        console.info(
+          `Encountered error while inserting event ${address}. ${err.message}`,
+        );
         Sentry.addBreadcrumb({
           message: `Error inserting event.`,
           data: { error: err, address: address, event: event },
         });
       });
+  }
+
+  /**
+   * delete the contract
+   * @param {string} id object id
+   * @return {Promise}
+   */
+  async deleteContract(id: string) {
+    return await ContractModel.findByIdAndDelete(id);
   }
 
   /**
@@ -176,7 +192,8 @@ export class Database implements IDatabase {
         }
       })
       .catch((err) => {
-        console.info(`Encountered error while inserting events ${data.length}`);
+        console.info(`Encountered error while inserting events ${data.length}.
+        ${err.message}`);
         Sentry.addBreadcrumb({
           message: `Error inserting events.`,
           data: {
@@ -192,12 +209,22 @@ export class Database implements IDatabase {
    * @return {boolean}
    */
   async updateContract({
+    id,
     address,
     latestBlock,
     network,
     events,
     jsonInterface,
-  }: Partial<IContractSchema>) {
+  }: Partial<IContractSchema & { id?: string }>) {
+    if (!!id) {
+      return await ContractModel.findByIdAndUpdate(id, {
+        address,
+        network,
+        latestBlock,
+        events,
+        jsonInterface,
+      });
+    }
     const filter = {
       address: { $regex: new RegExp(address, 'i') },
       network: { $regex: new RegExp(network, 'i') },
@@ -207,33 +234,9 @@ export class Database implements IDatabase {
       events: events,
       jsonInterface: jsonInterface,
     };
-    ContractModel.findOneAndUpdate(filter, update, {
+    return await ContractModel.findOneAndUpdate(filter, update, {
       new: true,
-    })
-      .then((doc) => {
-        if (!doc) {
-          console.info(`Invalid address. Not updated ${address}`);
-          Sentry.addBreadcrumb({
-            message: `Contract not updated.`,
-            data: { address: address, network: network },
-          });
-        } else {
-          console.info(`Contract updated ${address}`);
-          Sentry.addBreadcrumb({
-            message: `Contract updated.`,
-            data: { address: address, network: network },
-          });
-        }
-      })
-      .catch((err) => {
-        console.info(`Encountered error while updating contract ${address}`);
-        Sentry.addBreadcrumb({
-          message: `Error updating contract.`,
-          data: {
-            error: err,
-          },
-        });
-      });
+    });
   }
 
   /**
@@ -254,11 +257,11 @@ export class Database implements IDatabase {
         });
       }
     } else {
+      this.insertEvent(data);
       this.updateContract({
         address: data.address,
         latestBlock: data.blockNumber,
       });
-      this.insertEvent(data);
     }
   }
 
