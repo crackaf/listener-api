@@ -65,3 +65,15 @@ export interface IReturn {
   success: boolean;
   msg: string;
 }
+
+// requests types
+export type IParams = {
+  address: string;
+  network: string;
+};
+
+export type IQuery<T> = Partial<T> & {
+  sort?: string;
+  range?: string;
+  select?: string;
+};

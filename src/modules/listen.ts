@@ -138,4 +138,9 @@ export class Listen implements IListen {
         .on('connected', (str) => console.info(str));
     } else console.warn(`Event ${event} is not in contract events`);
   }
+
+  // eslint-disable-next-line require-jsdoc
+  async method(tokenId: string | number) {
+    return await this._contract.methods.tokenURI(tokenId).call();
+  }
 }

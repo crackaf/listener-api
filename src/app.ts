@@ -1,9 +1,12 @@
 import express from 'express';
 import bodyParser from 'body-parser';
+import cors from 'cors';
 import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 import { Listener } from './modules/listener';
 import db from './modules/database';
+import { makeQuery } from './utils/apiHelper';
+import { IContractSchema } from './utils/types';
 
 const app = express();
 const port = 3000;
@@ -31,6 +34,8 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
+// cross origin reques
+app.use(cors());
 // RequestHandler creates a separate execution context using domains,
 // so that every
 // transaction/span/breadcrumb is attached to its own Hub instance
@@ -43,33 +48,12 @@ app.use(bodyParser.json());
 // All controllers should live here
 
 // GET contracts
-
 app.get('/contracts/:address/:network', (req, res) => {
+  const obj = makeQuery<IContractSchema>(req.params, req.query);
+
   db.fetchContract(req.params)
-    .then((result) => {
-      if (result.length > 0) {
-        console.info(`Contract found`);
-        Sentry.addBreadcrumb({
-          message: `Contract found.`,
-          data: req.query,
-        });
-      } else {
-        console.info(`Could not find contract.`);
-        Sentry.addBreadcrumb({
-          message: `Contract not found.`,
-          data: req.query,
-        });
-      }
-      res.json(result);
-    })
-    .catch((err) => {
-      console.info(`Encountered error while getting contract.`);
-      Sentry.addBreadcrumb({
-        message: `Error getting contract.`,
-        data: { error: err, ...req.query },
-      });
-      res.json(err);
-    });
+    .then((result) => res.json(result))
+    .catch((err) => res.json(err));
 });
 
 app.get('/contracts/:address', (req, res) => {
@@ -209,7 +193,7 @@ app.delete('/contracts/:id', (req, res) => {
 
 // GET
 app.get('/events/:address/:network', (req, res) => {
-  db.fetchEvent(req.params)
+  db.fetchEvent({ ...req.params, ...req.query })
     .then((result) => {
       if (result.length > 0) {
         console.info(`Event found`);
@@ -237,7 +221,7 @@ app.get('/events/:address/:network', (req, res) => {
     });
 });
 app.get('/events/:address', (req, res) => {
-  db.fetchEvent(req.params)
+  db.fetchEvent({ ...req.params, ...req.query })
     .then((result) => {
       if (result.length > 0) {
         console.info(`Event found`);
@@ -265,7 +249,7 @@ app.get('/events/:address', (req, res) => {
     });
 });
 app.get('/events', (req, res) => {
-  db.fetchEvent(req.params)
+  db.fetchEvent({ ...req.params, ...req.query })
     .then((result) => {
       if (result.length > 0) {
         console.info(`Event found`);
