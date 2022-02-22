@@ -1,7 +1,13 @@
 import mongoose from 'mongoose';
 import * as Sentry from '@sentry/node';
-import { ContractModel, EventModel } from '../schema';
-import { IContractSchema, IEventSchema, IReturn } from '../utils/types';
+import { ContractModel, EventModel, TokenModel } from '../schema';
+import {
+  IContractSchema,
+  IEventSchema,
+  ITokenSchema,
+  IReturn,
+  ApiFunctionData,
+} from '../utils/types';
 import { IDatabase } from '../utils/types';
 
 /**
@@ -204,6 +210,40 @@ export class Database implements IDatabase {
   }
 
   /**
+   *
+   * @param {ITokenSchema} token
+   */
+  async insertToken(token: ITokenSchema) {
+    new TokenModel(token)
+      .save()
+      .then((result: ITokenSchema) => {
+        if (result) {
+          console.info(`Added token ${result.id}`);
+          Sentry.addBreadcrumb({
+            message: `Token added.`,
+            data: { id: result.id },
+          });
+        } else {
+          console.info(`Could not add token ${result.id}`);
+          Sentry.addBreadcrumb({
+            message: `Token not added.`,
+            data: { id: result.id },
+          });
+        }
+      })
+      .catch((err: Error) => {
+        console.info(
+          `Encountered error while inserting token ${token.id}.
+           ${err.message}`,
+        );
+        Sentry.addBreadcrumb({
+          message: `Error inserting token.`,
+          data: { error: err, address: token.id },
+        });
+      });
+  }
+
+  /**
    * @param {string} contractAddr
    * @param {IContractSchema} contractObj
    * @return {boolean}
@@ -263,6 +303,14 @@ export class Database implements IDatabase {
         latestBlock: data.blockNumber,
       });
     }
+  }
+
+  /**
+   *
+   * @param {ITokenSchema} data
+   */
+  methodHandler(data: ITokenSchema) {
+    this.insertToken(data);
   }
 
   /**

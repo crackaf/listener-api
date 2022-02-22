@@ -6,7 +6,7 @@ import * as Tracing from '@sentry/tracing';
 import { Listener } from './modules/listener';
 import db from './modules/database';
 import { makeQuery } from './utils/apiHelper';
-import { IContractSchema } from './utils/types';
+import { IContractSchema, ITokenSchema } from './utils/types';
 
 const app = express();
 const port = 3000;
@@ -54,6 +54,17 @@ app.get('/contracts/:address/:network', (req, res) => {
   db.fetchContract(req.params)
     .then((result) => res.json(result))
     .catch((err) => res.json(err));
+});
+
+app.get('/testToken/:address/:network/:tokenId', (req, res) => {
+  const tokenObj: ITokenSchema = {
+    ...req.params,
+    data: {
+      ...req.query,
+    },
+  };
+  db.insertToken(tokenObj);
+  res.send(tokenObj);
 });
 
 app.get('/contracts/:address', (req, res) => {

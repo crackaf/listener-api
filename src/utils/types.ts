@@ -16,6 +16,7 @@ export interface IContractSchema {
   events: string[];
   jsonInterface: AbiItem | AbiItem[];
 }
+
 export interface IEventSchema extends Partial<ApiEventData> {
   address: string;
   rpc: string;
@@ -25,6 +26,13 @@ export interface IEventSchema extends Partial<ApiEventData> {
   returnValues: {
     [key: string]: any;
   };
+}
+
+export interface ITokenSchema {
+  address: string;
+  network: string;
+  tokenId: string;
+  [key: string]: any;
 }
 
 // classes interface
@@ -76,4 +84,8 @@ export type IQuery<T> = Partial<T> & {
   sort?: string;
   range?: string;
   select?: string;
+};
+
+export type ApiFunctionData = {
+  [key: string]: any;
 };
