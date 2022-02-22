@@ -2,7 +2,13 @@ import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
 import { Listen } from './listen';
 import NETWORKS from '../config/networks';
-import { ApiEventData, IDatabase, IListen, IReturn } from '../utils/types';
+import {
+  ApiEventData,
+  IDatabase,
+  IListen,
+  IReturn,
+  ITokenSchema,
+} from '../utils/types';
 interface IContracts {
   [key: string]: {
     address: string;
@@ -135,13 +141,62 @@ export class Listener {
           data[0].address,
           Math.max(...data.map((d) => d.blockNumber ?? 0)),
         );
+
+        // call the required functions
+        for (const d of data) {
+          if (!!d.returnValues.tokenId) {
+            this.contracts[d.address].listen.method(
+              'tokenURI',
+              (methodData: { tokenURI: string }) => {
+                const params = {
+                  address: d.address,
+                  network: this.contracts[d.address].network,
+                  tokenId: d.returnValues.tokenId,
+                };
+                const { returnValues } = d;
+                this._methodHandlerWrapper({
+                  ...params,
+                  data: { ...returnValues, ...methodData },
+                });
+              },
+            );
+          }
+        }
       }
     } else {
       this._updateBlock(data.address, data.blockNumber);
+
+      // call the required functions
+      // for tokenId
+      if (!!data.returnValues.tokenId) {
+        this.contracts[data.address].listen.method(
+          'tokenURI',
+          (methodData: { tokenURI: string }) => {
+            const params = {
+              address: data.address,
+              network: this.contracts[data.address].network,
+              tokenId: data.returnValues.tokenId,
+            };
+            const { returnValues } = data;
+            this._methodHandlerWrapper({
+              ...params,
+              data: { ...returnValues, ...methodData },
+            });
+          },
+        );
+      }
     }
 
     // add to db
     this._db.eventHandler(data);
+  }
+
+  /**
+   *
+   * @param {ITokeSchema} data data
+   */
+  private _methodHandlerWrapper(data: ITokenSchema) {
+    this._db.methodHandler(data);
   }
 
   /**

@@ -8,6 +8,10 @@ export interface ApiEventData extends EventData {
   rpc: string;
 }
 
+export interface ApiFunctionData {
+  [key: string]: any;
+}
+
 // schema types
 export interface IContractSchema {
   address: string;
@@ -32,7 +36,9 @@ export interface ITokenSchema {
   address: string;
   network: string;
   tokenId: string;
-  [key: string]: any;
+  data: {
+    [key: string]: any;
+  };
 }
 
 // classes interface
@@ -52,6 +58,7 @@ export interface IDatabase {
   insertEvent: (data: IEventSchema) => void;
   insertEvents: (data: IEventSchema[]) => void;
   eventHandler: (data: IEventSchema | IEventSchema[]) => void;
+  methodHandler: (data: ITokenSchema) => void;
 }
 
 export interface IListen {
@@ -65,6 +72,11 @@ export interface IListen {
     event: keyof StandardInterface['events'],
     eventHandler: (data: ApiEventData) => void,
     eventOptions?: EventOptions,
+  ) => void;
+  method: (
+    methodName: string,
+    methodHandler: (data: any) => void,
+    methodArgs?: any[],
   ) => void;
 }
 
@@ -86,6 +98,16 @@ export type IQuery<T> = Partial<T> & {
   select?: string;
 };
 
-export type ApiFunctionData = {
-  [key: string]: any;
+export type IMongoQ = {
+  filter: {
+    [key: string]: any;
+  };
+  limit: number;
+  skip: number;
+  sort: {
+    [key: string]: number;
+  };
+  select: {
+    [key: string]: number;
+  };
 };

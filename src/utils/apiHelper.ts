@@ -1,27 +1,22 @@
-import { IParams, IQuery } from './types';
+import { IMongoQ, IParams, IQuery } from './types';
 
 // eslint-disable-next-line require-jsdoc
 export function makeQuery<T>(
   params: IParams,
   query: IQuery<T>,
-): {
-  filter: any;
-  sort: any;
-  limit: any;
-  skip: any;
-  select: any;
-} {
+  queryName?: string,
+): IMongoQ {
   // filter
   let filter = {};
   for (const key in query) {
     if (
       Object.prototype.hasOwnProperty.call(query, key) &&
-      !!query[key] &&
-      !(key in ['sort', 'range', 'select'])
+      !['sort', 'range', 'select'].includes(key) &&
+      !!query[key]
     ) {
       try {
         filter = {
-          ...query,
+          ...filter,
           [key]: JSON.parse(query[key]),
         };
       } catch {
@@ -32,10 +27,14 @@ export function makeQuery<T>(
       }
     }
   }
-  if (!!query['events']) {
-    filter['events'] = { $in: query['events'] };
+  if (!!filter['events']) {
+    filter['events'] = { $in: filter['events'] };
   }
-  filter = { ...params, ...filter };
+  if (queryName) {
+    filter = { ...params, [queryName]: filter };
+  } else {
+    filter = { ...params, ...filter };
+  }
 
   // making sorting
   let sort = {};
@@ -51,7 +50,7 @@ export function makeQuery<T>(
   // select
   let select = {};
   if (query.select) {
-    for (const sel of query.sort.split(' ')) {
+    for (const sel of query.select.split(' ')) {
       select = {
         ...select,
         [sel]: 1,
@@ -65,7 +64,7 @@ export function makeQuery<T>(
   if (query.range) {
     const r = query.range.split('-');
     skip = parseInt(r[0]);
-    limit = parseInt(r[1]);
+    limit = parseInt(r[1]) - parseInt(r[0]);
   }
 
   return { filter, sort, skip, limit, select };

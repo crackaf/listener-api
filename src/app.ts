@@ -47,6 +47,12 @@ app.use(bodyParser.json());
 
 // All controllers should live here
 
+app.get('/tests/:address/:network', (req, res) => {
+  const obj = makeQuery<IContractSchema>(req.params, req.query);
+  console.log(obj);
+  res.json([req.params, req.query, obj]);
+});
+
 // GET contracts
 app.get('/contracts/:address/:network', (req, res) => {
   const obj = makeQuery<IContractSchema>(req.params, req.query);

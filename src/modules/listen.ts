@@ -1,6 +1,7 @@
 import Web3 from 'web3';
 import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
+import { get } from 'lodash';
 import { PastEventOptions, EventData } from 'web3-eth-contract';
 import { StandardInterface, EventOptions } from '../config/abi/types';
 import { ApiEventData, IListen } from '../utils/types';
@@ -140,7 +141,13 @@ export class Listen implements IListen {
   }
 
   // eslint-disable-next-line require-jsdoc
-  async method(tokenId: string | number) {
-    return await this._contract.methods.tokenURI(tokenId).call();
+  async method(
+    methodName: string,
+    methodHandler: (data: any) => void,
+    methodArgs: any[] = [],
+  ) {
+    const contractMethod = get(this._contract, methodName);
+    const result = await contractMethod(...methodArgs);
+    methodHandler({ [methodName]: result });
   }
 }

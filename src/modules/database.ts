@@ -214,33 +214,33 @@ export class Database implements IDatabase {
    * @param {ITokenSchema} token
    */
   async insertToken(token: ITokenSchema) {
-    new TokenModel(token)
-      .save()
-      .then((result: ITokenSchema) => {
-        if (result) {
-          console.info(`Added token ${result.id}`);
-          Sentry.addBreadcrumb({
-            message: `Token added.`,
-            data: { id: result.id },
-          });
-        } else {
-          console.info(`Could not add token ${result.id}`);
-          Sentry.addBreadcrumb({
-            message: `Token not added.`,
-            data: { id: result.id },
-          });
-        }
-      })
-      .catch((err: Error) => {
-        console.info(
-          `Encountered error while inserting token ${token.id}.
-           ${err.message}`,
-        );
-        Sentry.addBreadcrumb({
-          message: `Error inserting token.`,
-          data: { error: err, address: token.id },
-        });
-      });
+    // new TokenModel(token)
+    //   .save()
+    //   .then((result: ITokenSchema) => {
+    //     if (result) {
+    //       console.info(`Added token ${result.id}`);
+    //       Sentry.addBreadcrumb({
+    //         message: `Token added.`,
+    //         data: { id: result.id },
+    //       });
+    //     } else {
+    //       console.info(`Could not add token ${result.id}`);
+    //       Sentry.addBreadcrumb({
+    //         message: `Token not added.`,
+    //         data: { id: result.id },
+    //       });
+    //     }
+    //   })
+    //   .catch((err: Error) => {
+    //     console.info(
+    //       `Encountered error while inserting token ${token.id}.
+    //        ${err.message}`,
+    //     );
+    //     Sentry.addBreadcrumb({
+    //       message: `Error inserting token.`,
+    //       data: { error: err, address: token.id },
+    //     });
+    //   });
   }
 
   /**
