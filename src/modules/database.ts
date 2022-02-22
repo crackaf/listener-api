@@ -7,6 +7,7 @@ import {
   ITokenSchema,
   IReturn,
   ApiFunctionData,
+  IMongoQ,
 } from '../utils/types';
 import { IDatabase } from '../utils/types';
 
@@ -112,7 +113,7 @@ export class Database implements IDatabase {
    *
    * @param {IEventSchema} eventObject
    */
-  insertEvent({
+  async insertEvent({
     address,
     event,
     rpc,
@@ -169,7 +170,7 @@ export class Database implements IDatabase {
    * @param {IEventSchema[]} events
    * @return {void}
    */
-  insertEvents(events: IEventSchema[]) {
+  async insertEvents(events: IEventSchema[]) {
     if (events.length <= 0) return;
     const data: IEventSchema[] = events.map(
       ({ address, rpc, event, transactionHash, blockNumber, returnValues }) => {
@@ -214,33 +215,36 @@ export class Database implements IDatabase {
    * @param {ITokenSchema} token
    */
   async insertToken(token: ITokenSchema) {
-    // new TokenModel(token)
-    //   .save()
-    //   .then((result: ITokenSchema) => {
-    //     if (result) {
-    //       console.info(`Added token ${result.id}`);
-    //       Sentry.addBreadcrumb({
-    //         message: `Token added.`,
-    //         data: { id: result.id },
-    //       });
-    //     } else {
-    //       console.info(`Could not add token ${result.id}`);
-    //       Sentry.addBreadcrumb({
-    //         message: `Token not added.`,
-    //         data: { id: result.id },
-    //       });
-    //     }
-    //   })
-    //   .catch((err: Error) => {
-    //     console.info(
-    //       `Encountered error while inserting token ${token.id}.
-    //        ${err.message}`,
-    //     );
-    //     Sentry.addBreadcrumb({
-    //       message: `Error inserting token.`,
-    //       data: { error: err, address: token.id },
-    //     });
-    //   });
+    const res = await new TokenModel(token).save();
+    return {
+      success: !!res,
+      msg: res as any,
+    };
+  }
+
+  /**
+   * @param {string} address
+   * @param {string} network
+   * @param {string} tokenId
+   * @param { object } data
+   */
+  async updateToken({
+    address,
+    network,
+    tokenId,
+    ...data
+  }: {
+    address: string;
+    network: string;
+    tokenId: string;
+    data: object;
+  }) {
+    const filter = {
+      address: { $regex: new RegExp(address, 'i') },
+      network: { $regex: new RegExp(network, 'i') },
+      tokenId: tokenId,
+    };
+    return await TokenModel.findOneAndUpdate(filter, { data });
   }
 
   /**
@@ -290,17 +294,19 @@ export class Database implements IDatabase {
         const latestBlockData = data.find(
           (dataItem: IEventSchema) => dataItem.blockNumber == maxBlockNumber,
         );
-        this.insertEvents(data);
-        this.updateContract({
-          address: latestBlockData.address,
-          latestBlock: latestBlockData.blockNumber,
+        this.insertEvents(data).finally(() => {
+          this.updateContract({
+            address: latestBlockData.address,
+            latestBlock: latestBlockData.blockNumber,
+          });
         });
       }
     } else {
-      this.insertEvent(data);
-      this.updateContract({
-        address: data.address,
-        latestBlock: data.blockNumber,
+      this.insertEvent(data).finally(() => {
+        this.updateContract({
+          address: data.address,
+          latestBlock: data.blockNumber,
+        });
       });
     }
   }
@@ -310,88 +316,50 @@ export class Database implements IDatabase {
    * @param {ITokenSchema} data
    */
   methodHandler(data: ITokenSchema) {
-    this.insertToken(data);
+    this.insertToken(data).then((result) => {
+      if (result) {
+        this.updateToken(data);
+      }
+    });
   }
 
   /**
    *
-   * @param {IContractSchema} data
-   * @return {IContractSchema}
+   * @param {IMongoQ} data
    */
-  async fetchContract(data: Partial<IContractSchema>) {
-    let query = {};
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key) && !!data[key]) {
-        try {
-          query = {
-            ...query,
-            [key]: JSON.parse(data[key]),
-          };
-        } catch {
-          query = {
-            ...query,
-            [key]: data[key],
-          };
-        }
-      }
-    }
-    if (!!query['events']) {
-      query['events'] = { $in: query['events'] };
-    }
-    return await ContractModel.find(query);
+  async fetchContract(data: IMongoQ) {
+    return await ContractModel.find(data.filter)
+      .select(data.select)
+      .sort(data.sort)
+      .skip(data.skip)
+      .limit(data.limit)
+      .exec();
   }
 
   /**
    *
-   * @param {IEventSchema} data
-   * @return {IEventSchema}
+   * @param {IMongoQ} data
    */
-  async fetchEvent(data: Partial<IEventSchema>) {
-    let query = {};
-    let returnValues = {};
-    const temp: IEventSchema = {
-      address: '',
-      rpc: '',
-      blockNumber: 0,
-      transactionHash: '',
-      event: '',
-      returnValues: {},
-    };
-    // EventModel.mapReduce
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key) && !!data[key]) {
-        if (Object.keys(temp).includes(key)) {
-          try {
-            query = {
-              ...query,
-              [key]: JSON.parse(data[key]),
-            };
-          } catch {
-            query = {
-              ...query,
-              [key]: data[key],
-            };
-          }
-        } else {
-          try {
-            returnValues = {
-              ...returnValues,
-              [key]: JSON.parse(data[key]),
-            };
-          } catch {
-            returnValues = {
-              ...returnValues,
-              [key]: data[key],
-            };
-          }
-        }
-      }
-    }
-    if (returnValues && Object.keys(returnValues).length !== 0) {
-      query['returnValues'] = returnValues;
-    }
-    console.info(query);
-    return await EventModel.find(query);
+  async fetchEvent(data: IMongoQ) {
+    return await EventModel.find(data.filter)
+      .select(data.select)
+      .sort(data.sort)
+      .skip(data.skip)
+      .limit(data.limit)
+      .exec();
+  }
+
+  /**
+   *
+   * @param {IMongoQ} data
+   */
+  async fetchToken(data: IMongoQ) {
+    return await TokenModel.find(data.filter)
+      .select(data.select)
+      .sort(data.sort)
+      .skip(data.skip)
+      .limit(data.limit)
+      .exec();
   }
 }
 
