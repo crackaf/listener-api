@@ -80,36 +80,10 @@ export class Database implements IDatabase {
       success: !!data,
       msg: data as any,
     };
-
-    // .then((result) => {
-    //   if (result) {
-    //     console.info(`Added contract ${address}`);
-    //     Sentry.addBreadcrumb({
-    //       message: `Contract added.`,
-    //       data: { address: address, network: network },
-    //     });
-    //   } else {
-    //     console.info(`Could not add contract ${address}`);
-    //     Sentry.addBreadcrumb({
-    //       message: `Contract not added.`,
-    //       data: { address: address, network: network },
-    //     });
-    //   }
-    // })
-    // .catch((err: Error) => {
-    //   console.info(
-    //     `Encountered error while inserting contract ${address}.
-    //      Error: ${err.message}`,
-    //   );
-    //   Sentry.addBreadcrumb({
-    //     message: `Error inserting contract.`,
-    //     data: { error: err, address: address, network: network },
-    //   });
-    // });
   }
 
   /**
-   *
+   * @dev insert event into database
    * @param {IEventSchema} eventObject
    */
   async insertEvent({
@@ -156,7 +130,7 @@ export class Database implements IDatabase {
   }
 
   /**
-   * delete the contract
+   * @dev delete the contract
    * @param {string} id object id
    * @return {Promise}
    */
@@ -165,9 +139,8 @@ export class Database implements IDatabase {
   }
 
   /**
-   *
+   * @dev insert multiple events into database
    * @param {IEventSchema[]} events
-   * @return {void}
    */
   async insertEvents(events: IEventSchema[]) {
     if (events.length <= 0) return;
@@ -217,7 +190,7 @@ export class Database implements IDatabase {
   }
 
   /**
-   *
+   * @dev insert token into the database
    * @param {ITokenSchema} token
    */
   async insertToken({ address, network, tokenId, data }: ITokenSchema) {
@@ -234,6 +207,8 @@ export class Database implements IDatabase {
   }
 
   /**
+   * @dev update token according to given address and network
+   * Note: address and network cannot be updated
    * @param {string} address
    * @param {string} network
    * @param {string} tokenId
@@ -259,6 +234,9 @@ export class Database implements IDatabase {
   }
 
   /**
+   * @dev update contract according to given id or (address+ network)
+   * Note: address and network can only be changed if object id is provided.
+   * Object id can be obtained from the database
    * @param {string} contractAddr
    * @param {IContractSchema} contractObj
    * @return {boolean}
@@ -295,7 +273,7 @@ export class Database implements IDatabase {
   }
 
   /**
-   *
+   * @dev insert new event(s) and update latest block in database if needed
    * @param {IEventSchema | IEventSchema[]} data
    */
   eventHandler(data: IEventSchema | IEventSchema[]) {
@@ -335,13 +313,13 @@ export class Database implements IDatabase {
   }
 
   /**
-   *
+   * @dev insert token into database
    * @param {ITokenSchema} data
    */
   methodHandler(data: ITokenSchema) {
     this.insertToken(data)
       .then((result) => {
-        if (result) {
+        if (result.success === false) {
           this.updateToken(data).catch((err: Error) => {
             console.info(err.message);
           });

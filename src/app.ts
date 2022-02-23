@@ -53,7 +53,7 @@ app.get('/contracts/:address/:network', (req, res) => {
   const obj = makeQuery<IContractSchema>(req.params, req.query);
 
   db.fetchContract(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
@@ -61,7 +61,7 @@ app.get('/contracts/:address', (req, res) => {
   const obj = makeQuery(req.params as any, req.query);
 
   db.fetchContract(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
@@ -69,7 +69,7 @@ app.get('/contracts', (req, res) => {
   const obj = makeQuery(req.params as any, req.query);
 
   db.fetchContract(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
@@ -82,14 +82,14 @@ app.get('/events/:address', (req, res) => {
     'retrunValues',
   );
   db.fetchEvent(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
 app.get('/events', (req, res) => {
   const obj = makeQuery<IEventSchema>(req.params as any, req.query);
   db.fetchEvent(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
@@ -98,14 +98,14 @@ app.get('/events', (req, res) => {
 app.get('/tokens/:address/:network/:tokenId', (req, res) => {
   const obj = makeQuery(req.params as any, req.query, 'data');
   db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
 app.get('/tokens/:address/:tokenId', (req, res) => {
   const obj = makeQuery(req.params as any, req.query, 'data');
   db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
