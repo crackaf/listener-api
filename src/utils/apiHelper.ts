@@ -1,4 +1,11 @@
-import { IMongoQ, IParams, IQuery } from './types';
+import {
+  IContractSchema,
+  IEventSchema,
+  IMongoQ,
+  IParams,
+  IQuery,
+  ITokenSchema,
+} from './types';
 
 // eslint-disable-next-line require-jsdoc
 export function makeQuery<T>(
@@ -30,7 +37,45 @@ export function makeQuery<T>(
   if (!!filter['events']) {
     filter['events'] = { $in: filter['events'] };
   }
-  if (queryName) {
+  if (queryName && !!filter && Object.keys(filter).length > 0) {
+    // renaming the keys
+    const keyCheckContract: IContractSchema = {
+      address: '',
+      network: '',
+      latestBlock: 0,
+      events: [],
+    };
+    const keyCheckEvent: IEventSchema = {
+      address: '',
+      rpc: '',
+      blockNumber: 0,
+      transactionHash: '',
+      event: '',
+      returnValues: {},
+    };
+    const keyCheckToken: ITokenSchema = {
+      address: '',
+      network: '',
+      tokenId: '',
+      data: {},
+    };
+    for (const key in filter) {
+      if (
+        Object.prototype.hasOwnProperty.call(filter, key) &&
+        !(
+          key in
+          [
+            ...Object.keys(keyCheckContract),
+            ...Object.keys(keyCheckEvent),
+            ...Object.keys(keyCheckToken),
+          ]
+        )
+      ) {
+        delete Object.assign(filter, { [`${queryName}.${key}`]: filter[key] })[
+          key
+        ];
+      }
+    }
     filter = { ...params, [queryName]: filter };
   } else {
     filter = { ...params, ...filter };

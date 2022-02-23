@@ -1,8 +1,8 @@
 import Web3 from 'web3';
 import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
-import { get } from 'lodash';
 import { PastEventOptions, EventData } from 'web3-eth-contract';
+import standardAbi from '../config/abi/standardInterface.json';
 import { StandardInterface, EventOptions } from '../config/abi/types';
 import { ApiEventData, IListen } from '../utils/types';
 
@@ -20,13 +20,13 @@ export class Listen implements IListen {
   /**
    * Listener Constructor
    * @param { string } rpc RPC URL
-   * @param { AbiItem | AbiItem[] } jsonInterface Abi interface for the contract
    * @param { string } address Address of the contract
+   * @param { AbiItem | AbiItem[] } jsonInterface Abi interface for the contract
    */
   constructor(
     rpc: string,
-    jsonInterface: AbiItem | AbiItem[],
     address: string,
+    jsonInterface?: AbiItem | AbiItem[],
   ) {
     Sentry.addBreadcrumb({
       message: 'Listen Constructor Called',
@@ -48,7 +48,7 @@ export class Listen implements IListen {
     }
 
     this.rpc = rpc;
-    this.jsonInterface = jsonInterface;
+    this.jsonInterface = jsonInterface ?? (standardAbi as AbiItem[]);
     this.address = address;
 
     // making contract instance
@@ -146,8 +146,14 @@ export class Listen implements IListen {
     methodHandler: (data: any) => void,
     methodArgs: any[] = [],
   ) {
-    const contractMethod = get(this._contract, methodName);
-    const result = await contractMethod(...methodArgs);
-    methodHandler({ [methodName]: result });
+    try {
+      const result = await this._contract.methods[methodName](
+        ...methodArgs,
+      ).call();
+      // console.info(methodName, result);
+      methodHandler({ [methodName]: result });
+    } catch {
+      console.error(`${methodName} can't be called for ${this.address}`);
+    }
   }
 }

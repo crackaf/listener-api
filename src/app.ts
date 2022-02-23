@@ -9,7 +9,8 @@ import { makeQuery } from './utils/apiHelper';
 import { IContractSchema, IEventSchema, ITokenSchema } from './utils/types';
 
 const app = express();
-const port = 3000;
+const port = process.argv[2];
+console.info('Using Port: ', port);
 
 let listener: Listener;
 try {
@@ -122,45 +123,45 @@ app.get('/contracts/:address', (req, res) => {
 
 // POST tokens
 app.post('/tokens/:address/:network/:tokenId', (req, res) => {
-  db.insertToken({
-    ...req.params,
-    data: {
-      ...req.query,
-    },
-  })
-    .then((result) => {
-      if (result) {
-        console.info(`Added token ${result.msg}`);
-        Sentry.addBreadcrumb({
-          message: `Token added.`,
-          data: { result: result.msg },
-        });
-      } else {
-        console.info(`Could not add token ${result.msg}`);
-        Sentry.addBreadcrumb({
-          message: `Token not added.`,
-          data: { result: result.msg },
-        });
-      }
-      res.json(result);
-    })
-    .catch((err: Error) => {
-      const tokenObj = {
-        ...req.params,
-        data: {
-          ...req.query,
-        },
-      };
-      console.info(
-        `Encountered error while inserting token ${tokenObj}.
-           Error: ${err.message}`,
-      );
-      Sentry.addBreadcrumb({
-        message: `Error inserting token.`,
-        data: { error: err, body: tokenObj },
-      });
-      res.json(err);
-    });
+  // db.insertToken({
+  //   ...req.params,
+  //   data: {
+  //     ...req.query,
+  //   },
+  // })
+  //   .then((result) => {
+  //     if (result) {
+  //       console.info(`Added token ${result.msg}`);
+  //       Sentry.addBreadcrumb({
+  //         message: `Token added.`,
+  //         data: { result: result.msg },
+  //       });
+  //     } else {
+  //       console.info(`Could not add token ${result.msg}`);
+  //       Sentry.addBreadcrumb({
+  //         message: `Token not added.`,
+  //         data: { result: result.msg },
+  //       });
+  //     }
+  //     res.json(result);
+  //   })
+  //   .catch((err: Error) => {
+  //     const tokenObj = {
+  //       ...req.params,
+  //       data: {
+  //         ...req.query,
+  //       },
+  //     };
+  //     console.info(
+  //       `Encountered error while inserting token ${tokenObj}.
+  //          Error: ${err.message}`,
+  //     );
+  //     Sentry.addBreadcrumb({
+  //       message: `Error inserting token.`,
+  //       data: { error: err, body: tokenObj },
+  //     });
+  //     res.json(err);
+  //   });
 });
 
 // POST contracts
@@ -193,6 +194,9 @@ app.post('/contracts', (req, res) => {
         data: { error: err, body: req.body },
       });
       res.json(err);
+    })
+    .finally(() => {
+      listener._loadDb();
     });
 });
 

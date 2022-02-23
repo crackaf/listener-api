@@ -62,13 +62,23 @@ export class Listener {
           listeners: this.isListening,
         },
       });
+      this._syncFromDb();
     });
+  }
+
+  /**
+   * This function will update the local db with timeinterval
+   */
+  private async _syncFromDb() {
+    setInterval(() => {
+      this._loadDb();
+    }, 10 * 1000); // every 10 seconds
   }
 
   /**
    * This function will load the database and
    */
-  private async _loadDb() {
+  async _loadDb() {
     Sentry.addBreadcrumb({
       message: '_loadDb Called',
     });
@@ -159,6 +169,7 @@ export class Listener {
                   data: { ...returnValues, ...methodData },
                 });
               },
+              [d.returnValues.tokenId],
             );
           }
         }
@@ -183,6 +194,7 @@ export class Listener {
               data: { ...returnValues, ...methodData },
             });
           },
+          [data.returnValues.tokenId],
         );
       }
     }
@@ -323,7 +335,7 @@ export class Listener {
     if (!inLocal) {
       // insert in array
       this._add(
-        new Listen(rpc, jsonInterface, address),
+        new Listen(rpc, address, jsonInterface),
         network,
         _events,
         latestBlock,

@@ -18,7 +18,7 @@ export interface IContractSchema {
   network: string;
   latestBlock: number;
   events: string[];
-  jsonInterface: AbiItem | AbiItem[];
+  jsonInterface?: AbiItem | AbiItem[];
 }
 
 export interface IEventSchema extends Partial<ApiEventData> {
@@ -37,7 +37,7 @@ export interface ITokenSchema {
   network: string;
   tokenId: string;
   data: {
-    [key: string]: any;
+    [key: string]: string;
   };
 }
 
