@@ -6,7 +6,7 @@ import * as Tracing from '@sentry/tracing';
 import { Listener } from './modules/listener';
 import db from './modules/database';
 import { makeQuery } from './utils/apiHelper';
-import { IContractSchema, IEventSchema, ITokenSchema } from './utils/types';
+import { IContractSchema, IEventSchema } from './utils/types';
 
 const app = express();
 const port = process.argv[2];
@@ -48,126 +48,93 @@ app.use(bodyParser.json());
 
 // All controllers should live here
 
-app.get('/tests/:address/:network', (req, res) => {
+// GET contracts
+app.get('/contracts/:address/:network', (req, res) => {
   const obj = makeQuery<IContractSchema>(req.params, req.query);
-  console.log(obj);
+
   db.fetchContract(obj).then((result) => {
     res.json([req.params, req.query, obj, result]);
   });
 });
 
-// GET contracts
-app.get('/contracts/:address/:network', (req, res) => {
-  const obj = makeQuery<IContractSchema>(req.params, req.query);
-
-  // db.fetchContract(req.params)
-  //   .then((result) => res.json(result))
-  //   .catch((err) => res.json(err));
-});
-
 app.get('/contracts/:address', (req, res) => {
-  // db.fetchContract(req.params)
-  //   .then((result) => {
-  //     if (result.length > 0) {
-  //       console.info(`Contract found`);
-  //       Sentry.addBreadcrumb({
-  //         message: `Contract found.`,
-  //         data: req.query,
-  //       });
-  //     } else {
-  //       console.info(`Could not find contract.`);
-  //       Sentry.addBreadcrumb({
-  //         message: `Contract not found.`,
-  //         data: req.query,
-  //       });
-  //     }
-  //     res.json(result);
-  //   })
-  //   .catch((err) => {
-  //     console.info(`Encountered error while getting contract.`);
-  //     Sentry.addBreadcrumb({
-  //       message: `Error getting contract.`,
-  //       data: { error: err, ...req.query },
-  //     });
-  //     res.json(err);
-  //   });
+  const obj = makeQuery(req.params as any, req.query);
+
+  db.fetchContract(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
 });
 
-// app.get('/contracts', (req, res) => {
-//   db.fetchContract(req.params)
-//     .then((result) => {
-//       if (result.length > 0) {
-//         console.info(`Contract found`);
-//         Sentry.addBreadcrumb({
-//           message: `Contract found.`,
-//           data: req.query,
-//         });
-//       } else {
-//         console.info(`Could not find contract.`);
-//         Sentry.addBreadcrumb({
-//           message: `Contract not found.`,
-//           data: req.query,
-//         });
-//       }
-//       res.json(result);
-//     })
-//     .catch((err) => {
-//       console.info(`Encountered error while getting contract.`);
-//       Sentry.addBreadcrumb({
-//         message: `Error getting contract.`,
-//         data: { error: err, ...req.query },
-//       });
-//       res.json(err);
-//     });
-// });
+app.get('/contracts', (req, res) => {
+  const obj = makeQuery(req.params as any, req.query);
 
-// POST tokens
-app.post('/tokens/:address/:network/:tokenId', (req, res) => {
-  // db.insertToken({
-  //   ...req.params,
-  //   data: {
-  //     ...req.query,
-  //   },
-  // })
-  //   .then((result) => {
-  //     if (result) {
-  //       console.info(`Added token ${result.msg}`);
-  //       Sentry.addBreadcrumb({
-  //         message: `Token added.`,
-  //         data: { result: result.msg },
-  //       });
-  //     } else {
-  //       console.info(`Could not add token ${result.msg}`);
-  //       Sentry.addBreadcrumb({
-  //         message: `Token not added.`,
-  //         data: { result: result.msg },
-  //       });
-  //     }
-  //     res.json(result);
-  //   })
-  //   .catch((err: Error) => {
-  //     const tokenObj = {
-  //       ...req.params,
-  //       data: {
-  //         ...req.query,
-  //       },
-  //     };
-  //     console.info(
-  //       `Encountered error while inserting token ${tokenObj}.
-  //          Error: ${err.message}`,
-  //     );
-  //     Sentry.addBreadcrumb({
-  //       message: `Error inserting token.`,
-  //       data: { error: err, body: tokenObj },
-  //     });
-  //     res.json(err);
-  //   });
+  db.fetchContract(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
+});
+
+// GET EVENTS
+
+app.get('/events/:address', (req, res) => {
+  const obj = makeQuery<IEventSchema>(
+    req.params as any,
+    req.query,
+    'retrunValues',
+  );
+  db.fetchEvent(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
+});
+
+app.get('/events', (req, res) => {
+  const obj = makeQuery<IEventSchema>(req.params as any, req.query);
+  db.fetchEvent(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
+});
+
+// GET TOKENS
+
+app.get('/tokens/:address/:network/:tokenId', (req, res) => {
+  const obj = makeQuery(req.params as any, req.query, 'data');
+  db.fetchToken(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
+});
+
+app.get('/tokens/:address/:tokenId', (req, res) => {
+  const obj = makeQuery(req.params as any, req.query, 'data');
+  db.fetchToken(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
+});
+
+app.get('/tokens/:address/:network', (req, res) => {
+  const obj = makeQuery(req.params as any, req.query, 'data');
+  db.fetchToken(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
+});
+
+app.get('/tokens/:address', (req, res) => {
+  const obj = makeQuery(req.params as any, req.query);
+  db.fetchToken(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
+});
+
+app.get('/tokens', (req, res) => {
+  const obj = makeQuery(req.params as any, req.query);
+  db.fetchToken(obj).then((result) => {
+    res.json([req.params, req.query, obj, result]);
+  });
 });
 
 // POST contracts
 app.post('/contracts', (req, res) => {
-  // console.info(req.body, req.params, req.query, req);
-  db.insertContract(req.body)
+  const { network, jsonInterface, address, events, latestBlock } = req.body;
+  listener
+    .add(network, jsonInterface, address, events, latestBlock)
     .then((result) => {
       if (result) {
         console.info(`Added contract ${result.msg}`);
@@ -187,7 +154,7 @@ app.post('/contracts', (req, res) => {
     .catch((err: Error) => {
       console.info(
         `Encountered error while inserting contract ${req.body}.
-         Error: ${err.message}`,
+       Error: ${err.message}`,
       );
       Sentry.addBreadcrumb({
         message: `Error inserting contract.`,
@@ -232,7 +199,7 @@ app.put('/contracts/:id', (req, res) => {
     });
 });
 
-// DELTE contract
+// DELETE contract
 app.delete('/contracts/:id', (req, res) => {
   const data = req.params.id;
   db.deleteContract(data)
@@ -242,53 +209,6 @@ app.delete('/contracts/:id', (req, res) => {
     .catch((err) => {
       res.json(err);
     });
-});
-
-// EVENTS
-
-// GET
-app.get('/events/:address', (req, res) => {
-  const obj = makeQuery<IEventSchema>(req.params as any, req.query);
-  db.fetchEvent(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
-  });
-});
-app.get('/events', (req, res) => {
-  const obj = makeQuery<IEventSchema>(req.params as any, req.query);
-  db.fetchEvent(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
-  });
-});
-
-app.get('/tokens/:address/:network/:tokenId', (req, res) => {
-  const obj = makeQuery(req.params as any, req.query);
-  db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
-  });
-});
-app.get('/tokens/:address/:tokenId', (req, res) => {
-  const obj = makeQuery(req.params as any, req.query);
-  db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
-  });
-});
-app.get('/tokens/:address/:network', (req, res) => {
-  const obj = makeQuery(req.params as any, req.query);
-  db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
-  });
-});
-app.get('/tokens/:address', (req, res) => {
-  const obj = makeQuery(req.params as any, req.query);
-  db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
-  });
-});
-app.get('/tokens', (req, res) => {
-  const obj = makeQuery(req.params as any, req.query);
-  db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
-  });
 });
 
 // The error handler must be before any other error middleware

@@ -76,10 +76,8 @@ export function makeQuery<T>(
         ];
       }
     }
-    filter = { ...params, [queryName]: filter };
-  } else {
-    filter = { ...params, ...filter };
   }
+  filter = { ...params, ...filter };
 
   // making sorting
   let sort = {};

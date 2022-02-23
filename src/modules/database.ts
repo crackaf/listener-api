@@ -294,20 +294,32 @@ export class Database implements IDatabase {
         const latestBlockData = data.find(
           (dataItem: IEventSchema) => dataItem.blockNumber == maxBlockNumber,
         );
-        this.insertEvents(data).finally(() => {
-          this.updateContract({
-            address: latestBlockData.address,
-            latestBlock: latestBlockData.blockNumber,
+        this.insertEvents(data)
+          .catch((err: Error) => {
+            console.info(err.message);
+          })
+          .finally(() => {
+            this.updateContract({
+              address: latestBlockData.address,
+              latestBlock: latestBlockData.blockNumber,
+            }).catch((err: Error) => {
+              console.info(err.message);
+            });
           });
-        });
       }
     } else {
-      this.insertEvent(data).finally(() => {
-        this.updateContract({
-          address: data.address,
-          latestBlock: data.blockNumber,
+      this.insertEvent(data)
+        .catch((err: Error) => {
+          console.info(err.message);
+        })
+        .finally(() => {
+          this.updateContract({
+            address: data.address,
+            latestBlock: data.blockNumber,
+          }).catch((err: Error) => {
+            console.info(err.message);
+          });
         });
-      });
     }
   }
 
@@ -316,11 +328,17 @@ export class Database implements IDatabase {
    * @param {ITokenSchema} data
    */
   methodHandler(data: ITokenSchema) {
-    this.insertToken(data).then((result) => {
-      if (result) {
-        this.updateToken(data);
-      }
-    });
+    this.insertToken(data)
+      .then((result) => {
+        if (result) {
+          this.updateToken(data).catch((err: Error) => {
+            console.info(err.message);
+          });
+        }
+      })
+      .catch((err: Error) => {
+        console.info(err.message);
+      });
   }
 
   /**

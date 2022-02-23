@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
 import { Listen } from './listen';
 import NETWORKS from '../config/networks';
+import standardAbi from '../config/abi/standardInterface.json';
 import {
   ApiEventData,
   IDatabase,
@@ -306,6 +307,11 @@ export class Listener {
       _events = [_events];
     }
 
+    if (!!!jsonInterface) {
+      // eslint-disable-next-line no-param-reassign
+      jsonInterface = standardAbi as AbiItem[];
+    }
+
     // rpc
     const rpc = NETWORKS[network];
 
@@ -322,6 +328,23 @@ export class Listener {
       };
     }
 
+    if (!inLocal) {
+      // insert in array
+      try {
+        this._add(
+          new Listen(rpc, address, jsonInterface),
+          network,
+          _events,
+          latestBlock,
+        );
+      } catch (error) {
+        return {
+          success: false,
+          msg: `Error while adding the contract`,
+        };
+      }
+    }
+
     if (!inDb) {
       // insert in db
       this._db.insertContract({
@@ -331,15 +354,6 @@ export class Listener {
         events: _events,
         latestBlock,
       });
-    }
-    if (!inLocal) {
-      // insert in array
-      this._add(
-        new Listen(rpc, address, jsonInterface),
-        network,
-        _events,
-        latestBlock,
-      );
     }
 
     return {
