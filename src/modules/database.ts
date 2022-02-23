@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import mongoose from 'mongoose';
 import * as Sentry from '@sentry/node';
 import { ContractModel, EventModel, TokenModel } from '../schema';
@@ -6,7 +7,6 @@ import {
   IEventSchema,
   ITokenSchema,
   IReturn,
-  ApiFunctionData,
   IMongoQ,
 } from '../utils/types';
 import { IDatabase } from '../utils/types';
@@ -21,8 +21,7 @@ export class Database implements IDatabase {
    * Create database connection
    */
   private constructor() {
-    const uri =
-      'mongodb+srv://bubbles:KseTfjRc4rOlgQXK@bubbles-project.vus3i.mongodb.net/listenerDatabase?retryWrites=true&w=majority';
+    const uri = process.env.MONGO_URI;
     mongoose
       .connect(uri)
       .then(() => console.info('Database connected!'))
@@ -116,14 +115,14 @@ export class Database implements IDatabase {
   async insertEvent({
     address,
     event,
-    rpc,
+    network,
     transactionHash,
     blockNumber,
     returnValues,
   }: IEventSchema) {
     new EventModel({
       address,
-      rpc,
+      network,
       event,
       transactionHash,
       blockNumber,
@@ -173,10 +172,17 @@ export class Database implements IDatabase {
   async insertEvents(events: IEventSchema[]) {
     if (events.length <= 0) return;
     const data: IEventSchema[] = events.map(
-      ({ address, rpc, event, transactionHash, blockNumber, returnValues }) => {
+      ({
+        address,
+        network,
+        event,
+        transactionHash,
+        blockNumber,
+        returnValues,
+      }) => {
         return {
           address,
-          rpc,
+          network,
           event,
           transactionHash,
           blockNumber,
@@ -214,8 +220,13 @@ export class Database implements IDatabase {
    *
    * @param {ITokenSchema} token
    */
-  async insertToken(token: ITokenSchema) {
-    const res = await new TokenModel(token).save();
+  async insertToken({ address, network, tokenId, data }: ITokenSchema) {
+    const res = await new TokenModel({
+      address,
+      network,
+      tokenId,
+      ...data,
+    }).save();
     return {
       success: !!res,
       msg: res as any,
@@ -244,7 +255,7 @@ export class Database implements IDatabase {
       network: { $regex: new RegExp(network, 'i') },
       tokenId: tokenId,
     };
-    return await TokenModel.findOneAndUpdate(filter, { data });
+    return await TokenModel.findOneAndUpdate(filter, { ...data });
   }
 
   /**
@@ -381,4 +392,5 @@ export class Database implements IDatabase {
   }
 }
 
+// console.log(process.env.MONGO_URI);
 export default Database.Instance;

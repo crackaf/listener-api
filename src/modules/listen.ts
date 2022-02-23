@@ -12,6 +12,7 @@ import { ApiEventData, IListen } from '../utils/types';
 export class Listen implements IListen {
   public readonly address: string;
   public readonly rpc: string;
+  public readonly network: string;
   public readonly jsonInterface: AbiItem | AbiItem[];
 
   private readonly _web3: Web3;
@@ -21,11 +22,13 @@ export class Listen implements IListen {
    * Listener Constructor
    * @param { string } rpc RPC URL
    * @param { string } address Address of the contract
+   * @param { string } network Address of the contract
    * @param { AbiItem | AbiItem[] } jsonInterface Abi interface for the contract
    */
   constructor(
     rpc: string,
     address: string,
+    network?: string,
     jsonInterface?: AbiItem | AbiItem[],
   ) {
     Sentry.addBreadcrumb({
@@ -48,8 +51,9 @@ export class Listen implements IListen {
     }
 
     this.rpc = rpc;
-    this.jsonInterface = jsonInterface ?? (standardAbi as AbiItem[]);
     this.address = address;
+    this.network = network ?? 'rinkbey';
+    this.jsonInterface = jsonInterface ?? (standardAbi as AbiItem[]);
 
     // making contract instance
     try {
@@ -91,19 +95,24 @@ export class Listen implements IListen {
         eventOptions: eventOptions,
       },
     });
-    this._contract
-      .getPastEvents(event, eventOptions)
-      .then((data) =>
-        eventHandler(
-          data.map((e) => {
-            return { ...e, rpc: this.rpc };
-          }),
-        ),
-      )
-      .catch((err) => {
-        console.error(err);
+    if (event in this._contract.events) {
+      try {
+        this._contract
+          .getPastEvents(event, eventOptions)
+          .then((data) =>
+            eventHandler(
+              data.map((e) => {
+                return { ...e, network: this.network };
+              }),
+            ),
+          )
+          .catch((err) => {
+            throw err;
+          });
+      } catch (err) {
         throw err;
-      });
+      }
+    } else console.warn(`Event ${event} is not in contract events`);
   }
 
   /**
@@ -129,11 +138,11 @@ export class Listen implements IListen {
       });
       this._contract.events[event](eventOptions)
         .on('data', (data: EventData) =>
-          eventHandler({ ...data, rpc: this.rpc }),
+          eventHandler({ ...data, network: this.network }),
         )
         .on('changed', (changed) => console.info(changed))
         .on('error', (err) => {
-          console.error(err);
+          // console.error(err);
           throw err;
         })
         .on('connected', (str) => console.info(str));
@@ -152,8 +161,9 @@ export class Listen implements IListen {
       ).call();
       // console.info(methodName, result);
       methodHandler({ [methodName]: result });
-    } catch {
+    } catch (err) {
       console.error(`${methodName} can't be called for ${this.address}`);
+      throw err;
     }
   }
 }

@@ -5,7 +5,7 @@ import { StandardInterface, EventOptions } from '../config/abi/types';
 
 // types
 export interface ApiEventData extends EventData {
-  rpc: string;
+  network: string;
 }
 
 export interface ApiFunctionData {
@@ -23,7 +23,7 @@ export interface IContractSchema {
 
 export interface IEventSchema extends Partial<ApiEventData> {
   address: string;
-  rpc: string;
+  network: string;
   blockNumber: number;
   transactionHash: string;
   event: string;

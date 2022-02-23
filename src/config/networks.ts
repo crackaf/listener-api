@@ -1,12 +1,14 @@
+import 'dotenv/config';
+
 export default {
-  ropsten: `https://ropsten.infura.io/v3/${process.env.INFURA_IO_KEY}`,
+  ropsten: `https://ropsten.infura.io/v3/${process.env.INFURA_KEY}`,
 
-  kovan: `https://kovan.infura.io/v3/${process.env.INFURA_IO_KEY}`,
+  kovan: `https://kovan.infura.io/v3/${process.env.INFURA_KEY}`,
 
-  rinkeby: `wss://rinkeby-light.eth.linkpool.io/ws`,
+  rinkeby: `wss://rinkeby.infura.io/ws/v3/${process.env.INFURA_KEY}`,
 
   // main ethereum network(mainnet
-  mainnet: `https://mainnet.infura.io/v3/${process.env.INFURA_IO_KEY}`,
+  ethMainnet: `wss://mainnet.infura.io/ws/v3/${process.env.INFURA_KEY}`,
 
   // bsc testnet
   bscTestnet:

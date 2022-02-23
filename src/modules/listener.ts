@@ -73,7 +73,7 @@ export class Listener {
   private async _syncFromDb() {
     setInterval(() => {
       this._loadDb();
-    }, 10 * 1000); // every 10 seconds
+    }, 100 * 1000); // every 100 seconds
   }
 
   /**
@@ -95,26 +95,28 @@ export class Listener {
       events,
       latestBlock,
     } of dataList) {
-      const result = this.add(
-        network as unknown as any,
-        jsonInterface,
-        address,
-        events,
-        latestBlock,
-      );
-      Sentry.addBreadcrumb({
-        message: 'loadDb->Add',
-        data: {
-          result: result,
-          ...{
-            network,
-            jsonInterface,
-            address,
-            events,
-            latestBlock,
+      if (!(address in this.contracts)) {
+        const result = this.add(
+          network as unknown as any,
+          jsonInterface,
+          address,
+          events,
+          latestBlock,
+        );
+        Sentry.addBreadcrumb({
+          message: 'loadDb->Add',
+          data: {
+            result: result,
+            ...{
+              network,
+              jsonInterface,
+              address,
+              events,
+              latestBlock,
+            },
           },
-        },
-      });
+        });
+      }
     }
   }
 
@@ -139,6 +141,32 @@ export class Listener {
   }
 
   /**
+   * call the functions for the event data
+   * @param {ApiEventData} data event data
+   */
+  private _functionCalls(data: ApiEventData) {
+    // for tokenId
+    if (!!data.returnValues.tokenId) {
+      this.contracts[data.address].listen.method(
+        'tokenURI',
+        (methodData: { tokenURI: string }) => {
+          const params = {
+            address: data.address,
+            network: this.contracts[data.address].network,
+            tokenId: data.returnValues.tokenId,
+          };
+          const { returnValues } = data;
+          this._methodHandlerWrapper({
+            ...params,
+            data: { ...returnValues, ...methodData },
+          });
+        },
+        [data.returnValues.tokenId],
+      );
+    }
+  }
+
+  /**
    * Wrapper for the database event handler
    * @param {ApiEventData | ApiEventData[]} data
    * Event data which you want to handle
@@ -154,50 +182,16 @@ export class Listener {
         );
 
         // call the required functions
+        // only calling the token URI
         for (const d of data) {
-          if (!!d.returnValues.tokenId) {
-            this.contracts[d.address].listen.method(
-              'tokenURI',
-              (methodData: { tokenURI: string }) => {
-                const params = {
-                  address: d.address,
-                  network: this.contracts[d.address].network,
-                  tokenId: d.returnValues.tokenId,
-                };
-                const { returnValues } = d;
-                this._methodHandlerWrapper({
-                  ...params,
-                  data: { ...returnValues, ...methodData },
-                });
-              },
-              [d.returnValues.tokenId],
-            );
-          }
+          this._functionCalls(d);
         }
       }
     } else {
       this._updateBlock(data.address, data.blockNumber);
 
       // call the required functions
-      // for tokenId
-      if (!!data.returnValues.tokenId) {
-        this.contracts[data.address].listen.method(
-          'tokenURI',
-          (methodData: { tokenURI: string }) => {
-            const params = {
-              address: data.address,
-              network: this.contracts[data.address].network,
-              tokenId: data.returnValues.tokenId,
-            };
-            const { returnValues } = data;
-            this._methodHandlerWrapper({
-              ...params,
-              data: { ...returnValues, ...methodData },
-            });
-          },
-          [data.returnValues.tokenId],
-        );
-      }
+      this._functionCalls(data);
     }
 
     // add to db
@@ -332,7 +326,7 @@ export class Listener {
       // insert in array
       try {
         this._add(
-          new Listen(rpc, address, jsonInterface),
+          new Listen(rpc, address, network, jsonInterface),
           network,
           _events,
           latestBlock,
@@ -441,9 +435,9 @@ export class Listener {
         // for every event
         for (const e of this.contracts[address].events) {
           this.contracts[address].listen.loadPastEvents(
-            e,
+            e, // event name
             (data: ApiEventData | ApiEventData[]) =>
-              this._eventHandlerWrapper(data),
+              this._eventHandlerWrapper(data), // callback
             {
               fromBlock: this.contracts[address].latestBlock,
             },

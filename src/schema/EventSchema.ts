@@ -6,7 +6,7 @@ const eventSchema = new Schema<IEventSchema>({
     type: String,
     required: true,
   },
-  rpc: {
+  network: {
     type: String,
     required: true,
   },
@@ -26,6 +26,6 @@ const eventSchema = new Schema<IEventSchema>({
     type: Object,
     required: true,
   },
-}).index({ address: 1, rpc: 1, transactionHash: 1 }, { unique: true });
+}).index({ address: 1, network: 1, transactionHash: 1 }, { unique: true });
 
 export const EventModel = model('Event', eventSchema);

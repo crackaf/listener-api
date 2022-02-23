@@ -47,7 +47,7 @@ export function makeQuery<T>(
     };
     const keyCheckEvent: IEventSchema = {
       address: '',
-      rpc: '',
+      network: '',
       blockNumber: 0,
       transactionHash: '',
       event: '',

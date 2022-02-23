@@ -15,8 +15,7 @@ const tokenSchema = new Schema<ITokenSchema>({
     required: true,
   },
   data: {
-    type: Map,
-    of: { type: String },
+    type: Object,
   },
 }).index({ address: 1, network: 1, tokenId: 1 }, { unique: true });
 
