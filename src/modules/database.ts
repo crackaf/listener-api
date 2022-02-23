@@ -194,6 +194,7 @@ export class Database implements IDatabase {
    * @param {ITokenSchema} token
    */
   async insertToken({ address, network, tokenId, data }: ITokenSchema) {
+    // console.log('TOKEN', data);
     const res = await new TokenModel({
       address,
       network,

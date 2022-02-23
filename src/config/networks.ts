@@ -1,9 +1,9 @@
 import 'dotenv/config';
 
 export default {
-  ropsten: `https://ropsten.infura.io/v3/${process.env.INFURA_KEY}`,
+  ropsten: `wss://ropsten.infura.io/v3/${process.env.INFURA_KEY}`,
 
-  kovan: `https://kovan.infura.io/v3/${process.env.INFURA_KEY}`,
+  kovan: `wss://kovan.infura.io/v3/${process.env.INFURA_KEY}`,
 
   rinkeby: `wss://rinkeby.infura.io/ws/v3/${process.env.INFURA_KEY}`,
 
