@@ -198,7 +198,7 @@ export class Database implements IDatabase {
       address,
       network,
       tokenId,
-      ...data,
+      data,
     }).save();
     return {
       success: !!res,
@@ -218,7 +218,7 @@ export class Database implements IDatabase {
     address,
     network,
     tokenId,
-    ...data
+    data,
   }: {
     address: string;
     network: string;
@@ -228,9 +228,9 @@ export class Database implements IDatabase {
     const filter = {
       address: { $regex: new RegExp(address, 'i') },
       network: { $regex: new RegExp(network, 'i') },
-      tokenId: tokenId,
+      tokenId: { $regex: new RegExp(tokenId, 'i') },
     };
-    return await TokenModel.findOneAndUpdate(filter, { ...data });
+    return await TokenModel.findOneAndUpdate(filter, { data });
   }
 
   /**
