@@ -57,7 +57,30 @@ export class Listen implements IListen {
 
     // making contract instance
     try {
-      this._web3 = new Web3(this.rpc);
+      const options = {
+        timeout: 30000, // ms
+
+        clientConfig: {
+          // Useful if requests are large
+          maxReceivedFrameSize: 100000000, // bytes - default: 1MiB
+          maxReceivedMessageSize: 100000000, // bytes - default: 8MiB
+
+          // Useful to keep a connection alive
+          keepalive: true,
+          keepaliveInterval: 60000, // ms
+        },
+
+        // Enable auto reconnection
+        reconnect: {
+          auto: true,
+          delay: 5000, // ms
+          maxAttempts: 5,
+          onTimeout: false,
+        },
+      };
+      this._web3 = new Web3(
+        new Web3.providers.WebsocketProvider(this.rpc, options),
+      );
       this._contract = new this._web3.eth.Contract(
         this.jsonInterface,
         this.address,
@@ -81,7 +104,7 @@ export class Listen implements IListen {
    * @param {()} eventHandler Function to handle the emitted data
    * @param {EventOptions} eventOptions event options
    */
-  loadPastEvents(
+  async loadPastEvents(
     event: string,
     eventHandler: (data: ApiEventData[]) => void,
     eventOptions?: PastEventOptions,
@@ -97,18 +120,12 @@ export class Listen implements IListen {
     });
     if (event in this._contract.events) {
       try {
-        this._contract
-          .getPastEvents(event, eventOptions)
-          .then((data) =>
-            eventHandler(
-              data.map((e) => {
-                return { ...e, network: this.network };
-              }),
-            ),
-          )
-          .catch((err) => {
-            throw err;
-          });
+        const data = await this._contract.getPastEvents(event, eventOptions);
+        eventHandler(
+          data.map((e) => {
+            return { ...e, network: this.network };
+          }),
+        );
       } catch (err) {
         throw err;
       }
@@ -137,15 +154,19 @@ export class Listen implements IListen {
         },
       });
       this._contract.events[event](eventOptions)
-        .on('data', (data: EventData) =>
-          eventHandler({ ...data, network: this.network }),
-        )
-        .on('changed', (changed) => console.info(changed))
+        .on('data', (data: EventData) => {
+          eventHandler({ ...data, network: this.network });
+        })
+        .on('changed', (changed) => {
+          console.info(changed);
+        })
         .on('error', (err) => {
           // console.error(err);
           throw err;
         })
-        .on('connected', (str) => console.info(str));
+        .on('connected', (str) => {
+          return console.info(str);
+        });
     } else console.warn(`Event ${event} is not in contract events`);
   }
 

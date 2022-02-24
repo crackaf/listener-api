@@ -335,8 +335,13 @@ export class Database implements IDatabase {
           });
         }
       })
-      .catch((err: Error) => {
-        console.info(err.message);
+      .catch((err: Error | any) => {
+        if (!!err.code && err.code !== 11000) console.info(err.message);
+      })
+      .finally(() => {
+        this.updateToken(data).catch((err: Error) => {
+          console.info(err.message);
+        });
       });
   }
 
