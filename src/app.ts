@@ -112,21 +112,21 @@ app.get('/tokens/:address/:tokenId', (req, res) => {
 app.get('/tokens/:address/:network', (req, res) => {
   const obj = makeQuery(req.params as any, req.query, 'data');
   db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
 app.get('/tokens/:address', (req, res) => {
   const obj = makeQuery(req.params as any, req.query);
   db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 
 app.get('/tokens', (req, res) => {
   const obj = makeQuery(req.params as any, req.query);
   db.fetchToken(obj).then((result) => {
-    res.json([req.params, req.query, obj, result]);
+    res.json(result);
   });
 });
 

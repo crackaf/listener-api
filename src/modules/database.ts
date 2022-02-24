@@ -193,12 +193,18 @@ export class Database implements IDatabase {
    * @dev insert token into the database
    * @param {ITokenSchema} token
    */
-  async insertToken({ address, network, tokenId, data }: ITokenSchema) {
-    // console.log('TOKEN', data);
+  async insertToken({
+    address,
+    network,
+    tokenId,
+    blockNumber,
+    data,
+  }: ITokenSchema) {
     const res = await new TokenModel({
       address,
       network,
       tokenId,
+      blockNumber,
       data,
     }).save();
     return {
@@ -219,19 +225,22 @@ export class Database implements IDatabase {
     address,
     network,
     tokenId,
+    blockNumber,
     data,
   }: {
     address: string;
     network: string;
     tokenId: string;
+    blockNumber: number;
     data: object;
   }) {
     const filter = {
       address: { $regex: new RegExp(address, 'i') },
       network: { $regex: new RegExp(network, 'i') },
       tokenId: { $regex: new RegExp(tokenId, 'i') },
+      blockNumber: { $lt: blockNumber },
     };
-    return await TokenModel.findOneAndUpdate(filter, { data });
+    return await TokenModel.findOneAndUpdate(filter, { blockNumber, data });
   }
 
   /**

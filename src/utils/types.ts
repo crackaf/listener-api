@@ -36,6 +36,7 @@ export interface ITokenSchema {
   address: string;
   network: string;
   tokenId: string;
+  blockNumber: number;
   data: {
     [key: string]: string;
   };

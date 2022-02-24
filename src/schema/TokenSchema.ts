@@ -14,6 +14,10 @@ const tokenSchema = new Schema<ITokenSchema>({
     type: String,
     required: true,
   },
+  blockNumber: {
+    type: Number,
+    required: true,
+  },
   data: {
     type: Object,
   },
