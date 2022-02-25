@@ -71,12 +71,12 @@ export class Listen implements IListen {
         },
 
         // Enable auto reconnection
-        reconnect: {
-          auto: true,
-          delay: 5000, // ms
-          maxAttempts: 5,
-          onTimeout: false,
-        },
+        // reconnect: {
+        //   auto: true,
+        //   delay: 5000, // ms
+        //   maxAttempts: 5,
+        //   onTimeout: false,
+        // },
       };
       this._web3 = new Web3(
         new Web3.providers.WebsocketProvider(this.rpc, options),
@@ -96,6 +96,67 @@ export class Listen implements IListen {
    */
   getJsonInterface(): AbiItem | AbiItem[] {
     return this.jsonInterface;
+  }
+
+  /**
+   * Recursive function in case of large data
+   * @param {string} _event Event name
+   * @param {EventOptions} _eventOptions event options
+   * @return {ApiEventData[]}
+   */
+  private async _loadPastEvents(
+    _event: string,
+    _eventOptions: PastEventOptions & {
+      fromBlock: number;
+      toBlock: number;
+    },
+  ): Promise<ApiEventData[]> {
+    const returnData = [];
+    const event = _event;
+    const realStart = _eventOptions.fromBlock;
+    const realEnd = _eventOptions.toBlock;
+
+    const recur = async (start: number, end: number) => {
+      try {
+        const data = await this._contract.getPastEvents(event, {
+          fromBlock: start,
+          toBlock: end,
+        });
+        if (data) {
+          returnData.push(...data);
+        }
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          err.message.toLowerCase() ===
+            'returned error: query returned more than 10000 results'
+        ) {
+          const middle = Math.round((start + end) / 2);
+          console.info(
+            'Infura 10000 limit [' +
+              start +
+              '..' +
+              end +
+              '] ->  [' +
+              start +
+              '..' +
+              middle +
+              '] ' +
+              'and [' +
+              (middle + 1) +
+              '..' +
+              end +
+              ']',
+          );
+          recur(start, middle);
+          recur(middle + 1, end);
+        } else throw err;
+      }
+    };
+
+    await recur(realStart, realEnd);
+
+    return returnData;
   }
 
   /**
@@ -127,7 +188,27 @@ export class Listen implements IListen {
           }),
         );
       } catch (err) {
-        throw err;
+        if (
+          err instanceof Error &&
+          err.message.toLowerCase() ===
+            'returned error: query returned more than 10000 results'
+        ) {
+          let start = 0;
+          let end = await this._web3.eth.getBlockNumber();
+          if (eventOptions) {
+            if (eventOptions.fromBlock) start = eventOptions.fromBlock as any;
+            if (eventOptions.toBlock) end = eventOptions.toBlock as any;
+          }
+          const data = await this._loadPastEvents(event, {
+            fromBlock: start,
+            toBlock: end,
+          });
+          eventHandler(
+            data.map((e) => {
+              return { ...e, network: this.network };
+            }),
+          );
+        } else throw err;
       }
     } else console.warn(`Event ${event} is not in contract events`);
   }

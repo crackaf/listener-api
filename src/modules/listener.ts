@@ -6,14 +6,14 @@ import standardAbi from '../config/abi/standardInterface.json';
 import {
   ApiEventData,
   IDatabase,
-  IListen,
+  // IListen,
   IReturn,
   ITokenSchema,
 } from '../utils/types';
 interface IContracts {
   [key: string]: {
     address: string;
-    listen: IListen;
+    listen: Listen;
     events: string[];
     latestBlock: number;
     network: keyof typeof NETWORKS;
@@ -71,9 +71,9 @@ export class Listener {
    * This function will update the local db with timeinterval
    */
   private async _syncFromDb() {
-    setInterval(() => {
-      this._loadDb();
-    }, 100 * 1000); // every 100 seconds
+    // setInterval(() => {
+    //   this._loadDb();
+    // }, 100 * 1000); // every 100 seconds
   }
 
   /**
@@ -279,7 +279,7 @@ export class Listener {
     }
 
     // load past events for the db then current
-    this.loadPastEvents(_listen.address).then(() => {
+    this.loadPastEvents(_listen.address).finally(() => {
       this.listenEvents(_listen.address);
     });
   }
@@ -387,7 +387,7 @@ export class Listener {
           events: this.contracts[address].events,
         });
         // listen to past events and then listen
-        this.loadPastEvents(address).then(() => {
+        this.loadPastEvents(address).finally(() => {
           this.listenEvents(address);
         });
         return {
