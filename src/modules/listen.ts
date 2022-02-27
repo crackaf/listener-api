@@ -71,12 +71,12 @@ export class Listen implements IListen {
         },
 
         // Enable auto reconnection
-        // reconnect: {
-        //   auto: true,
-        //   delay: 5000, // ms
-        //   maxAttempts: 5,
-        //   onTimeout: false,
-        // },
+        reconnect: {
+          auto: true,
+          delay: 5000, // ms
+          maxAttempts: 5,
+          onTimeout: false,
+        },
       };
       this._web3 = new Web3(
         new Web3.providers.WebsocketProvider(this.rpc, options),
@@ -101,21 +101,22 @@ export class Listen implements IListen {
   /**
    * Recursive function in case of large data
    * @param {string} _event Event name
+   * @param {()} _eventHandler Function to handle the emitted data
    * @param {EventOptions} _eventOptions event options
    * @return {ApiEventData[]}
    */
   private async _loadPastEvents(
     _event: string,
+    _eventHandler: (data: ApiEventData[]) => void,
     _eventOptions: PastEventOptions & {
       fromBlock: number;
       toBlock: number;
     },
-  ): Promise<ApiEventData[]> {
-    const returnData = [];
+  ) {
     const event = _event;
     const realStart = _eventOptions.fromBlock;
     const realEnd = _eventOptions.toBlock;
-
+    const callBack = (data) => _eventHandler(data);
     const recur = async (start: number, end: number) => {
       try {
         const data = await this._contract.getPastEvents(event, {
@@ -123,7 +124,8 @@ export class Listen implements IListen {
           toBlock: end,
         });
         if (data) {
-          returnData.push(...data);
+          console.info(data.length);
+          callBack(data);
         }
       } catch (err) {
         if (
@@ -150,13 +152,11 @@ export class Listen implements IListen {
           );
           recur(start, middle);
           recur(middle + 1, end);
-        } else throw err;
+        } else if (!!err.code && err.code !== 11000) throw err;
       }
     };
 
     await recur(realStart, realEnd);
-
-    return returnData;
   }
 
   /**
@@ -199,16 +199,21 @@ export class Listen implements IListen {
             if (eventOptions.fromBlock) start = eventOptions.fromBlock as any;
             if (eventOptions.toBlock) end = eventOptions.toBlock as any;
           }
-          const data = await this._loadPastEvents(event, {
-            fromBlock: start,
-            toBlock: end,
-          });
-          eventHandler(
-            data.map((e) => {
-              return { ...e, network: this.network };
-            }),
+          await this._loadPastEvents(
+            event,
+            (data) => {
+              eventHandler(
+                data.map((e) => {
+                  return { ...e, network: this.network };
+                }),
+              );
+            },
+            {
+              fromBlock: start,
+              toBlock: end,
+            },
           );
-        } else throw err;
+        } else if (!!err.code && err.code !== 11000) throw err;
       }
     } else console.warn(`Event ${event} is not in contract events`);
   }
@@ -265,7 +270,12 @@ export class Listen implements IListen {
       methodHandler({ [methodName]: result });
     } catch (err) {
       console.error(`${methodName} can't be called for ${this.address}`);
-      throw err;
+      console.error(err.message);
+      // const result = await this._contract.methods[methodName](
+      //   ...methodArgs,
+      // ).call();
+      methodHandler({ [methodName]: '' });
+      // throw err;
     }
   }
 }

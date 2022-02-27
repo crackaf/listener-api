@@ -10,6 +10,7 @@ import {
   IReturn,
   ITokenSchema,
 } from '../utils/types';
+import { eventHandler, methodHandler } from './handlers';
 interface IContracts {
   [key: string]: {
     address: string;
@@ -200,7 +201,7 @@ export class Listener {
     }
 
     // add to db
-    this._db.eventHandler(data);
+    eventHandler(data);
   }
 
   /**
@@ -208,7 +209,7 @@ export class Listener {
    * @param {ITokeSchema} data data
    */
   private _methodHandlerWrapper(data: ITokenSchema) {
-    this._db.methodHandler(data);
+    methodHandler(data);
   }
 
   /**
