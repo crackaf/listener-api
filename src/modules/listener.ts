@@ -148,23 +148,34 @@ export class Listener {
   private _functionCalls(data: ApiEventData) {
     // for tokenId
     if (!!data.returnValues.tokenId) {
-      this.contracts[data.address].listen.method(
-        'tokenURI',
-        (methodData: { tokenURI: string }) => {
-          const params = {
-            address: data.address,
-            network: this.contracts[data.address].network,
-            tokenId: data.returnValues.tokenId,
-            blockNumber: data.blockNumber,
-          };
-          const { returnValues } = data;
-          this._methodHandlerWrapper({
-            ...params,
-            data: { ...returnValues, ...methodData },
-          });
-        },
-        [data.returnValues.tokenId],
-      );
+      try {
+        this.contracts[data.address].listen.method(
+          'tokenURI',
+          (methodData: { tokenURI: string }) => {
+            const params = {
+              address: data.address,
+              network: this.contracts[data.address].network,
+              tokenId: data.returnValues.tokenId,
+              blockNumber: data.blockNumber,
+            };
+            const { returnValues } = data;
+            this._methodHandlerWrapper({
+              ...params,
+              data: { ...returnValues, ...methodData },
+            });
+          },
+          [data.returnValues.tokenId],
+        );
+      } catch (err) {
+        const params = {
+          address: data.address,
+          network: this.contracts[data.address].network,
+          tokenId: data.returnValues.tokenId,
+          blockNumber: data.blockNumber,
+        };
+        const { returnValues } = data;
+        this._methodHandlerWrapper({ ...params, data: { ...returnValues } });
+      }
     }
   }
 

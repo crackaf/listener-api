@@ -71,12 +71,12 @@ export class Listen implements IListen {
         },
 
         // Enable auto reconnection
-        reconnect: {
-          auto: true,
-          delay: 5000, // ms
-          maxAttempts: 5,
-          onTimeout: false,
-        },
+        // reconnect: {
+        //   auto: true,
+        //   delay: 5000, // ms
+        //   maxAttempts: 5,
+        //   onTimeout: false,
+        // },
       };
       this._web3 = new Web3(
         new Web3.providers.WebsocketProvider(this.rpc, options),
@@ -124,8 +124,10 @@ export class Listen implements IListen {
           toBlock: end,
         });
         if (data) {
-          console.info(data.length);
+          console.info(start, end, data.length);
           callBack(data);
+        } else {
+          console.log(start, end, data);
         }
       } catch (err) {
         if (
