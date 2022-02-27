@@ -268,10 +268,19 @@ export class Database implements IDatabase {
         jsonInterface,
       });
     }
-    const filter = {
-      address: { $regex: new RegExp(address, 'i') },
-      network: { $regex: new RegExp(network, 'i') },
-    };
+    let filter = {};
+    if (!!latestBlock) {
+      filter = {
+        address: { $regex: new RegExp(address, 'i') },
+        network: { $regex: new RegExp(network, 'i') },
+        latestBlock: { $lte: latestBlock },
+      };
+    } else {
+      filter = {
+        address: { $regex: new RegExp(address, 'i') },
+        network: { $regex: new RegExp(network, 'i') },
+      };
+    }
     const update = {
       latestBlock: latestBlock,
       events: events,
