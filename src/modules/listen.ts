@@ -99,6 +99,67 @@ export class Listen implements IListen {
   }
 
   /**
+   * Recursive function in case of large data
+   * @param {string} _event Event name
+   * @param {()} _eventHandler Function to handle the emitted data
+   * @param {EventOptions} _eventOptions event options
+   * @return {ApiEventData[]}
+   */
+  private async _loadPastEvents(
+    _event: string,
+    _eventHandler: (data: ApiEventData[]) => void,
+    _eventOptions: PastEventOptions & {
+      fromBlock: number;
+      toBlock: number;
+    },
+  ) {
+    const event = _event;
+    const realStart = _eventOptions.fromBlock;
+    const realEnd = _eventOptions.toBlock;
+    const callBack = (data) => _eventHandler(data);
+    const recur = async (start: number, end: number) => {
+      try {
+        const data = await this._contract.getPastEvents(event, {
+          fromBlock: start,
+          toBlock: end,
+        });
+        if (data) {
+          console.info(data.length);
+          callBack(data);
+        }
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          err.message.toLowerCase() ===
+            'returned error: query returned more than 10000 results'
+        ) {
+          const middle = Math.round((start + end) / 2);
+          console.info(
+            'Infura 10000 limit [' +
+              start +
+              '..' +
+              end +
+              '] ->  [' +
+              start +
+              '..' +
+              middle +
+              '] ' +
+              'and [' +
+              (middle + 1) +
+              '..' +
+              end +
+              ']',
+          );
+          recur(start, middle);
+          recur(middle + 1, end);
+        } else if (!!err.code && err.code !== 11000) throw err;
+      }
+    };
+
+    await recur(realStart, realEnd);
+  }
+
+  /**
    * Load the past events
    * @param {string} event Event name
    * @param {()} eventHandler Function to handle the emitted data
@@ -127,7 +188,32 @@ export class Listen implements IListen {
           }),
         );
       } catch (err) {
-        throw err;
+        if (
+          err instanceof Error &&
+          err.message.toLowerCase() ===
+            'returned error: query returned more than 10000 results'
+        ) {
+          let start = 0;
+          let end = await this._web3.eth.getBlockNumber();
+          if (eventOptions) {
+            if (eventOptions.fromBlock) start = eventOptions.fromBlock as any;
+            if (eventOptions.toBlock) end = eventOptions.toBlock as any;
+          }
+          await this._loadPastEvents(
+            event,
+            (data) => {
+              eventHandler(
+                data.map((e) => {
+                  return { ...e, network: this.network };
+                }),
+              );
+            },
+            {
+              fromBlock: start,
+              toBlock: end,
+            },
+          );
+        } else if (!!err.code && err.code !== 11000) throw err;
       }
     } else console.warn(`Event ${event} is not in contract events`);
   }
@@ -184,7 +270,12 @@ export class Listen implements IListen {
       methodHandler({ [methodName]: result });
     } catch (err) {
       console.error(`${methodName} can't be called for ${this.address}`);
-      throw err;
+      console.error(err.message);
+      // const result = await this._contract.methods[methodName](
+      //   ...methodArgs,
+      // ).call();
+      methodHandler({ [methodName]: '' });
+      // throw err;
     }
   }
 }

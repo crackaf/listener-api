@@ -200,17 +200,25 @@ export class Database implements IDatabase {
     blockNumber,
     data,
   }: ITokenSchema) {
-    const res = await new TokenModel({
-      address,
-      network,
-      tokenId,
-      blockNumber,
-      data,
-    }).save();
-    return {
-      success: !!res,
-      msg: res as any,
-    };
+    try {
+      const res = await new TokenModel({
+        address,
+        network,
+        tokenId,
+        blockNumber,
+        data,
+      }).save();
+      return {
+        success: !!res,
+        msg: res as any,
+      };
+    } catch (err) {
+      if (!!err.code && err.code !== 11000) console.warn(err.message);
+      return {
+        success: false,
+        msg: err.message,
+      };
+    }
   }
 
   /**
@@ -303,29 +311,29 @@ export class Database implements IDatabase {
           (dataItem: IEventSchema) => dataItem.blockNumber == maxBlockNumber,
         );
         this.insertEvents(data)
-          .catch((err: Error) => {
-            console.info(err.message);
+          .catch((err) => {
+            if (!!err.code && err.code !== 11000) console.info(err.message);
           })
           .finally(() => {
             this.updateContract({
               address: latestBlockData.address,
               latestBlock: latestBlockData.blockNumber,
-            }).catch((err: Error) => {
-              console.info(err.message);
+            }).catch((err) => {
+              if (!!err.code && err.code !== 11000) console.info(err.message);
             });
           });
       }
     } else {
       this.insertEvent(data)
-        .catch((err: Error) => {
-          console.info(err.message);
+        .catch((err) => {
+          if (!!err.code && err.code !== 11000) console.info(err.message);
         })
         .finally(() => {
           this.updateContract({
             address: data.address,
             latestBlock: data.blockNumber,
-          }).catch((err: Error) => {
-            console.info(err.message);
+          }).catch((err) => {
+            if (!!err.code && err.code !== 11000) console.info(err.message);
           });
         });
     }
@@ -339,8 +347,8 @@ export class Database implements IDatabase {
     this.insertToken(data)
       .then((result) => {
         if (result.success === false) {
-          this.updateToken(data).catch((err: Error) => {
-            console.info(err.message);
+          this.updateToken(data).catch((err) => {
+            if (!!err.code && err.code !== 11000) console.info(err.message);
           });
         }
       })
@@ -348,8 +356,8 @@ export class Database implements IDatabase {
         if (!!err.code && err.code !== 11000) console.info(err.message);
       })
       .finally(() => {
-        this.updateToken(data).catch((err: Error) => {
-          console.info(err.message);
+        this.updateToken(data).catch((err) => {
+          if (!!err.code && err.code !== 11000) console.info(err.message);
         });
       });
   }
@@ -394,5 +402,5 @@ export class Database implements IDatabase {
   }
 }
 
-// console.log(process.env.MONGO_URI);
+export const getDb = () => Database.Instance;
 export default Database.Instance;
