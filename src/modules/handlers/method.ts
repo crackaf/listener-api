@@ -9,7 +9,7 @@ import { getDb } from '../database';
 export function methodHandler(data: ITokenSchema) {
   try {
     const db = getDb();
-    return db.insertToken(data);
+    return db.methodHandler(data);
   } catch (err) {
     if (!!err.code && err.code !== 11000) console.error(err);
   }
