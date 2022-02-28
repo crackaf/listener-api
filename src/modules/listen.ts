@@ -127,7 +127,8 @@ export class Listen implements IListen {
           console.info(start, end, data.length);
           callBack(data);
         } else {
-          console.log(start, end, data);
+          console.warn(start, end, data);
+          recur(start, end);
         }
       } catch (err) {
         if (

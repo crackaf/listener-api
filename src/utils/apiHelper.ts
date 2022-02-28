@@ -58,7 +58,9 @@ export function makeQuery<T>(
       network: '',
       tokenId: '',
       blockNumber: 0,
-      data: {},
+      data: {
+        tokenId: '',
+      },
     };
     for (const key in filter) {
       if (

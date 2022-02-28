@@ -38,6 +38,7 @@ export interface ITokenSchema {
   tokenId: string;
   blockNumber: number;
   data: {
+    tokenId: string;
     [key: string]: string;
   };
 }

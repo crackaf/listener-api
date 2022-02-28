@@ -200,24 +200,26 @@ export class Database implements IDatabase {
     blockNumber,
     data,
   }: ITokenSchema) {
-    try {
-      const res = await new TokenModel({
-        address,
-        network,
-        tokenId,
-        blockNumber,
-        data,
-      }).save();
-      return {
-        success: !!res,
-        msg: res as any,
-      };
-    } catch (err) {
-      if (!!err.code && err.code !== 11000) console.warn(err.message);
-      return {
-        success: false,
-        msg: err.message,
-      };
+    if (!!data.tokenId && tokenId.localeCompare(data.tokenId) === 0) {
+      try {
+        const res = await new TokenModel({
+          address,
+          network,
+          tokenId,
+          blockNumber,
+          data,
+        }).save();
+        return {
+          success: !!res,
+          msg: res as any,
+        };
+      } catch (err) {
+        if (!!err.code && err.code !== 11000) console.warn(err.message);
+        return {
+          success: false,
+          msg: err.message,
+        };
+      }
     }
   }
 
@@ -235,20 +237,16 @@ export class Database implements IDatabase {
     tokenId,
     blockNumber,
     data,
-  }: {
-    address: string;
-    network: string;
-    tokenId: string;
-    blockNumber: number;
-    data: object;
-  }) {
-    const filter = {
-      address: { $regex: new RegExp('^' + address + '$', 'i') },
-      network: { $regex: new RegExp(network, 'i') },
-      tokenId: tokenId,
-      blockNumber: { $lt: blockNumber },
-    };
-    return await TokenModel.findOneAndUpdate(filter, { blockNumber, data });
+  }: ITokenSchema) {
+    if (!!data.tokenId && tokenId.localeCompare(data.tokenId) === 0) {
+      const filter = {
+        address: { $regex: new RegExp('^' + address + '$', 'i') },
+        network: { $regex: new RegExp(network, 'i') },
+        tokenId: tokenId,
+        blockNumber: { $lt: blockNumber },
+      };
+      return await TokenModel.findOneAndUpdate(filter, { blockNumber, data });
+    }
   }
 
   /**

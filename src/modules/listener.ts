@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/node';
 import { AbiItem } from 'web3-utils';
 import { Listen } from './listen';
+import { eventHandler, methodHandler } from './handlers';
 import NETWORKS from '../config/networks';
 import standardAbi from '../config/abi/standardInterface.json';
 import {
@@ -10,7 +11,6 @@ import {
   IReturn,
   ITokenSchema,
 } from '../utils/types';
-import { eventHandler, methodHandler } from './handlers';
 interface IContracts {
   [key: string]: {
     address: string;
@@ -148,33 +148,28 @@ export class Listener {
   private _functionCalls(data: ApiEventData) {
     // for tokenId
     if (!!data.returnValues.tokenId) {
+      const dataDup = data; // because data is overright in threads
+      const params = {
+        address: dataDup.address,
+        network: this.contracts[dataDup.address].network,
+        tokenId: dataDup.returnValues.tokenId,
+        blockNumber: dataDup.blockNumber,
+      };
+      const { returnValues } = dataDup;
+      const { tokenId, ...others } = returnValues;
       try {
-        this.contracts[data.address].listen.method(
+        this.contracts[dataDup.address].listen.method(
           'tokenURI',
           (methodData: { tokenURI: string }) => {
-            const params = {
-              address: data.address,
-              network: this.contracts[data.address].network,
-              tokenId: data.returnValues.tokenId,
-              blockNumber: data.blockNumber,
-            };
-            const { returnValues } = data;
             this._methodHandlerWrapper({
               ...params,
-              data: { ...returnValues, ...methodData },
+              data: { tokenId, ...others, ...methodData },
             });
           },
-          [data.returnValues.tokenId],
+          [dataDup.returnValues.tokenId],
         );
       } catch (err) {
-        const params = {
-          address: data.address,
-          network: this.contracts[data.address].network,
-          tokenId: data.returnValues.tokenId,
-          blockNumber: data.blockNumber,
-        };
-        const { returnValues } = data;
-        this._methodHandlerWrapper({ ...params, data: { ...returnValues } });
+        this._methodHandlerWrapper({ ...params, data: { tokenId, ...others } });
       }
     }
   }
