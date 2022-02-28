@@ -39,7 +39,11 @@ export interface ITokenSchema {
   blockNumber: number;
   data: {
     tokenId: string;
-    [key: string]: string;
+    media: {
+      image: string;
+      [key: string]: string;
+    };
+    [key: string]: string | { image: string; [key: string]: string };
   };
 }
 

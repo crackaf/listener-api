@@ -243,7 +243,7 @@ export class Database implements IDatabase {
         address: { $regex: new RegExp('^' + address + '$', 'i') },
         network: { $regex: new RegExp(network, 'i') },
         tokenId: tokenId,
-        blockNumber: { $lt: blockNumber },
+        blockNumber: { $lte: blockNumber },
       };
       return await TokenModel.findOneAndUpdate(filter, { blockNumber, data });
     }

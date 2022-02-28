@@ -11,6 +11,7 @@ import {
   IReturn,
   ITokenSchema,
 } from '../utils/types';
+import { uriHandler } from './handlers/uri';
 interface IContracts {
   [key: string]: {
     address: string;
@@ -163,13 +164,17 @@ export class Listener {
           (methodData: { tokenURI: string }) => {
             this._methodHandlerWrapper({
               ...params,
-              data: { tokenId, ...others, ...methodData },
+
+              data: { media: { image: '' }, tokenId, ...others, ...methodData },
             });
           },
           [dataDup.returnValues.tokenId],
         );
       } catch (err) {
-        this._methodHandlerWrapper({ ...params, data: { tokenId, ...others } });
+        this._methodHandlerWrapper({
+          ...params,
+          data: { media: { image: '' }, tokenId, ...others },
+        });
       }
     }
   }
@@ -216,6 +221,7 @@ export class Listener {
    */
   private _methodHandlerWrapper(data: ITokenSchema) {
     methodHandler(data);
+    uriHandler(data);
   }
 
   /**

@@ -58,7 +58,11 @@ export function makeQuery<T>(
       network: '',
       tokenId: '',
       blockNumber: 0,
+
       data: {
+        media: {
+          image: '',
+        },
         tokenId: '',
       },
     };
