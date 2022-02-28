@@ -49,7 +49,7 @@ export class Database implements IDatabase {
    */
   async isExistContract(address: string): Promise<boolean> {
     const contractObj = await ContractModel.exists({
-      address: { $regex: new RegExp(address, 'i') },
+      address: { $regex: new RegExp('^' + address + '$', 'i') },
     });
     return !!contractObj;
   }
@@ -243,9 +243,9 @@ export class Database implements IDatabase {
     data: object;
   }) {
     const filter = {
-      address: { $regex: new RegExp(address, 'i') },
+      address: { $regex: new RegExp('^' + address + '$', 'i') },
       network: { $regex: new RegExp(network, 'i') },
-      tokenId: { $regex: new RegExp(tokenId, 'i') },
+      tokenId: tokenId,
       blockNumber: { $lt: blockNumber },
     };
     return await TokenModel.findOneAndUpdate(filter, { blockNumber, data });
@@ -279,13 +279,13 @@ export class Database implements IDatabase {
     let filter = {};
     if (!!latestBlock) {
       filter = {
-        address: { $regex: new RegExp(address, 'i') },
+        address: { $regex: new RegExp('^' + address + '$', 'i') },
         network: { $regex: new RegExp(network, 'i') },
         latestBlock: { $lte: latestBlock },
       };
     } else {
       filter = {
-        address: { $regex: new RegExp(address, 'i') },
+        address: { $regex: new RegExp('^' + address + '$', 'i') },
         network: { $regex: new RegExp(network, 'i') },
       };
     }
