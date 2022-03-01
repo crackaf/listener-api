@@ -2,6 +2,8 @@ import fetch from 'node-fetch';
 import { ITokenSchema } from '../../utils/types';
 import { methodHandler } from './method';
 
+let apiHitCounter = 0;
+
 /**
  * @dev Get token image against its uri
  * @param {string} tokenURI
@@ -18,7 +20,7 @@ async function fetchImageURL(tokenURI: string) {
     })
     .catch((err) => {
       if (err.type === 'invalid-json') {
-        console.info(err.type);
+        // console.info(err.type);
         newURL = url;
       } else {
         console.error(err);
@@ -39,16 +41,20 @@ export function uriHandler(data: ITokenSchema) {
     const uri = data.data.tokenURI as string;
     const { address, network, tokenId, blockNumber } = data;
     const { media, ...other } = data.data;
-    fetchImageURL(uri).then((result) => {
-      media.image = result;
-      methodHandler({
-        address,
-        network,
-        tokenId,
-        blockNumber,
-        data: { ...other, media },
+    setTimeout(() => {
+      console.info('Hitting: ', uri);
+      fetchImageURL(uri).then((result) => {
+        media.image = result;
+        methodHandler({
+          address,
+          network,
+          tokenId,
+          blockNumber,
+          data: { ...other, media },
+        });
       });
-    });
+    }, apiHitCounter * 5000); // 5s delay
+    apiHitCounter++;
   } catch (err) {
     if (!!!err.code || (!!err.code && err.code !== 11000)) console.error(err);
   }
