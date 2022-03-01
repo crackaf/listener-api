@@ -53,7 +53,7 @@ export function uriHandler(data: ITokenSchema) {
           data: { ...other, media },
         });
       });
-    }, apiHitCounter * 5000); // 5s delay
+    }, apiHitCounter * 2500); // 2.5s delay
     apiHitCounter++;
   } catch (err) {
     if (!!!err.code || (!!err.code && err.code !== 11000)) console.error(err);
