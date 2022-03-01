@@ -13,21 +13,24 @@ async function fetchImageURL(tokenURI: string) {
   const url = tokenURI.replace('ipfs://', 'https://ipfs.io/ipfs/');
   let newURL = '';
   await fetch(url)
-    .then((result) => result.json())
-    .then((json) => {
+    .then((result: { json: () => any }) => result.json())
+    .then((json: any) => {
       newURL = json.image;
       //   console.log('First: ' + url);
+      console.info('Api Hit End:', apiHitCounter, url);
+      apiHitCounter--;
     })
-    .catch((err) => {
+    .catch((err: { type: string }) => {
       if (err.type === 'invalid-json') {
         // console.info(err.type);
         newURL = url;
       } else {
         console.error(err);
       }
+      console.info('Api Hit End:', apiHitCounter, url);
+      apiHitCounter--;
     });
   newURL = newURL.replace('ipfs://', 'https://ipfs.io/ipfs/');
-
   return newURL;
 }
 
