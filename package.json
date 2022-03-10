@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/app.js",
   "scripts": {
+    "build": "tsc",
     "start": "tsc && node dist/app.js 5000",
     "lint": "eslint . --ext .ts",
     "format:write": "prettier --write \"**/*.{js,jsx,ts,tsx}\"",

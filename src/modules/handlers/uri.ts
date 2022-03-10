@@ -27,7 +27,7 @@ async function fetchImageURL(tokenURI: string) {
       } else {
         console.error(err);
       }
-      console.info('Api Hit End:', apiHitCounter, url);
+      console.info('ApiHitEnd:', apiHitCounter, url);
       apiHitCounter--;
     });
   newURL = newURL.replace('ipfs://', 'https://ipfs.io/ipfs/');
@@ -45,7 +45,7 @@ export function uriHandler(data: ITokenSchema) {
     const { address, network, tokenId, blockNumber } = data;
     const { media, ...other } = data.data;
     setTimeout(() => {
-      console.info('Hitting: ', uri);
+      console.info('Hitting:', uri);
       fetchImageURL(uri).then((result) => {
         media.image = result;
         methodHandler({
